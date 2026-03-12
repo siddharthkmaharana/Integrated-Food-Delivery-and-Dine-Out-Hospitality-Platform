@@ -154,7 +154,7 @@ npm start
 
 Internship Team (4 Members)
 
-Frontend Developer
+Frontend Developer - Siddharth Kumar Maharana
 Backend Developer
 Realtime Systems Engineer
 Database & DevOps Engineer
