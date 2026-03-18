@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { createPageUrl } from "@/utils";
 import { Star, Clock, Bike } from "lucide-react";
 
 export default function RestaurantCard({ restaurant }) {
