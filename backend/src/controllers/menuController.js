@@ -8,7 +8,7 @@ const getMenuItems = async(req ,res) =>{
         const items = await MenuItem.find({resturant: req.params.id});
         res.json({ success: true ,count: items.length, data: items});
     } catch(error){
-        res.status(500).json({ message: error.message};)
+        res.status(500).json({ message: error.message});
     }
     
 };
