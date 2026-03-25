@@ -1,11 +1,11 @@
 import MenuItem from '../models/MenuItem.js';
-import MenuItem from '../models/MenuItem.js';
+
 
 //GET /api/restaurants/:id/menu
 
 const getMenuItems = async(req ,res) =>{
     try{
-        const items = await MenuItem.find({resturant: req.params.id});
+        const items = await MenuItem.find({restaurant: req.params.id});
         res.json({ success: true ,count: items.length, data: items});
     } catch(error){
         res.status(500).json({ message: error.message});
@@ -18,7 +18,7 @@ const getMenuItems = async(req ,res) =>{
 const addMenuItem = async (req,res) =>{
     try{
         const {name, description, price ,category , image} = req.body;
-        const MenuItem = await MenuItem.create({
+        const menuItem = await MenuItem.create({
             restaurant: req.params.id,
             name,
             description,
@@ -26,7 +26,7 @@ const addMenuItem = async (req,res) =>{
             category,
             image
         });
-        res.status(201).json({ message: true , data: MenuItem});
+        res.status(201).json({ success: true , data: menuItem});
     } catch(error){
         res.status(500).json({ message: error.message});
     }

@@ -10,7 +10,7 @@ const resturantSchema = new mongoose.Schema({
     address:{type:String, required:true},
     image:{type:String, default:''},
     location:{
-        type:{type:String, enum:['point'], required:true, default:'point'},
+        type:{type:String, enum:['Point'], required:true, default:'Point'},
         coordinates:{type:[Number], required: true}
     }
 },{timestamps:true});
