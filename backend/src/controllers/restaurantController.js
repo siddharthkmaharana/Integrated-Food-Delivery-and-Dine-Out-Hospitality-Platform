@@ -17,7 +17,7 @@ const getRestaurants = async (req, res) => {
         const  pipeline =[
             {
                 $geoNear:{near:{
-                    type:'point',
+                    type:'Point',
                     coordinates:[parseFloat(longitude), parseFloat(latitude)]
                 },
                 distanceField : 'distance',
@@ -49,7 +49,7 @@ const getRestaurants = async (req, res) => {
         ];
         const restaurants = await Resturant.aggregate(pipeline);
         return res.json({
-            successs: true,
+            success: true,
             count: restaurants.length,
             data: restaurants
         });
@@ -100,12 +100,12 @@ const createRestaurant = async (req,res) =>{
             address,
             image,
             location:{
-                type: 'point',
+                type: 'Point',
                 coordinates:[parseFloat(longitude), parseFloat(latitude)]
             }
         });
 
-        res.status(201).json({ successs :true , data: restaurant});
+        res.status(201).json({ success :true , data: restaurant});
     } catch (error) {
         res.status(500).json({ message: error.message});
 
