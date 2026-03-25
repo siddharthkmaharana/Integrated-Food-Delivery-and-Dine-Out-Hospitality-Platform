@@ -1,13 +1,11 @@
 import express from 'express';
-import { protect } from '../middleware/authMiddleware.js';
-import { authorize } from '../middleware/authMiddleware.js';
+import { protect, authorize } from '../middleware/authMiddleware.js';
 import {
     getRestaurants,
     getRestaurantById,
     createRestaurant,
     updateRestaurant
 } from '../controllers/restaurantController.js';
-
 import {
     getMenuItems,
     addMenuItem,
@@ -17,16 +15,16 @@ import {
 
 const router = express.Router();
 
-//Restaurant routes
+// Restaurant routes
 router.get('/', getRestaurants);
 router.get('/:id', getRestaurantById);
 router.post('/', protect, authorize('restaurant'), createRestaurant);
-router.put('/:id', protect,authorize('restaurant'), updateRestaurant);
+router.put('/:id', protect, authorize('restaurant'), updateRestaurant);
 
-//Menu routes
-router.get('/', getMenuItems);
-router.post('/:id/menu', protect,authorize('restaurant'), addMenuItem);
+// Menu routes
+router.get('/:id/menu', getMenuItems);  
+router.post('/:id/menu', protect, authorize('restaurant'), addMenuItem);
 router.put('/:id/menu/:itemId', protect, authorize('restaurant'), updateMenuItem);
-router.delete('/:id/menu/:itemId', protect ,authorize('restaurant'), deleteMenuItem);
+router.delete('/:id/menu/:itemId', protect, authorize('restaurant'), deleteMenuItem);
 
 export default router;
