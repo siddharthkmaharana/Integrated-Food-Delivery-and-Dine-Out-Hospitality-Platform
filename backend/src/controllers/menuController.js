@@ -1,5 +1,5 @@
 import MenuItem from '../models/MenuItem.js';
-import MenuItem from '../models/MenuItem.js';
+
 
 //GET /api/restaurants/:id/menu
 

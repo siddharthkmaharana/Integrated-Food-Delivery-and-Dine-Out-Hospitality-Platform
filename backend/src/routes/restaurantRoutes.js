@@ -1,4 +1,6 @@
 import express from 'express';
+import { protect } from '../middleware/authMiddleware.js';
+import { authorize } from '../middleware/authMiddleware.js';
 import {
     getRestaurants,
     getRestaurantById,
@@ -18,7 +20,7 @@ const router = express.Router();
 //Restaurant routes
 router.get('/', getRestaurants);
 router.get('/:id', getRestaurantById);
-router.post('/', Protect, authorize('restaurant'), createRestaurant);
+router.post('/', protect, authorize('restaurant'), createRestaurant);
 router.put('/:id', protect,authorize('restaurant'), updateRestaurant);
 
 //Menu routes

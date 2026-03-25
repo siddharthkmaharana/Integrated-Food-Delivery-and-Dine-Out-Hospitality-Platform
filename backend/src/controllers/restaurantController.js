@@ -75,7 +75,7 @@ const getRestaurants = async (req, res) => {
 
 
 // GET /api/restaurants/:id
-const getRestaurantsById = async (req,res) =>{
+const getRestaurantById = async (req,res) =>{
     try{
          const restaurant = await Resturant.findById(req.params.id);
          if (!restaurant){
@@ -129,4 +129,4 @@ const updateRestaurant = async (req, res) => {
   }
 };
 
-export { getRestaurants , getRestaurantsById , createRestaurant ,updateRestaurant};
+export { getRestaurants , getRestaurantById , createRestaurant ,updateRestaurant};
