@@ -1,118 +1,103 @@
-import Resturant from '../models/Restaurant.js';
+import Restaurant from '../models/Restaurant.js';
 
-//GET /api/restaurants
 const getRestaurants = async (req, res) => {
-  try{
+  try {
     const {
-        longitude,
-        latitude,
-        maxDistance = 10000,
-        cuisine,
-        page=1,
-        limit=10 // default to 5km
+      longitude,
+      latitude,
+      maxDistance = 10000,
+      cuisine,
+      page = 1,
+      limit = 10
     } = req.query;
-    
-    // if location is there use geospatial search 
-    if (longitude && latitude){
-        const  pipeline =[
-            {
-                $geoNear:{near:{
-                    type:'Point',
-                    coordinates:[parseFloat(longitude), parseFloat(latitude)]
-                },
-                distanceField : 'distance',
-                maxDistance:parseInt(maxDistance),
-                spherical:true
+
+    if (longitude && latitude) {
+      const pipeline = [
+        {
+          $geoNear: {
+            near: {
+              type: 'Point',
+              coordinates: [parseFloat(longitude), parseFloat(latitude)]
+            },
+            distanceField: 'distance',
+            maxDistance: parseInt(maxDistance),
+            spherical: true
+          }
+        },
+        {
+          $addFields: {
+            combinedScore: {
+              $subtract: [
+                { $multiply: ['$rating', 1000] },
+                { $divide: ['$distance', 100] }
+              ]
             }
-            },
-            // combined score of distance + rating 
-            {
-                $addFields:{
-                    combinedScore:{
-                        $subtract:[
-                            {$multiply :['$rating',1000]},
-                            {$divide: ['$distance', 100]}
-                        ]
-                    }
-                }
-            },
-            //filter by cuisine if provided
+          }
+        },
+       
+        ...(cuisine ? [{ $match: { cuisine: { $in: [cuisine] } } }] : []),
+        { $sort: { combinedScore: -1 } },
+        { $skip: (parseInt(page) - 1) * parseInt(limit) },
+        { $limit: parseInt(limit) }
+      ];
 
-            ...Resturant(cuisine ? [{ $match: { cuisine : { $in : [cuisine]}}}]:[]),
-
-                {$sort:{combinedScore: -1}},
-
-                //pagination 
-                {$skip : (parseInt(page) -1 ) * parseInt(limit)},
-                { $limit: parseInt(limit)}
-            
-        ];
-        const restaurants = await Resturant.aggregate(pipeline);
-        return res.json({
-            success: true,
-            count: restaurants.length,
-            data: restaurants
-        });
-    }
-
-    // no location - return all restaurants 
-
-    const restaurants = await Resturant.find()
-    .sort({ rating: -1})
-    .skip((parseInt(page) - 1) * parseInt(limit));
-
-    res.json({
-        successs: true,
+      const restaurants = await Restaurant.aggregate(pipeline);
+      return res.json({
+        success: true,
         count: restaurants.length,
         data: restaurants
-    });
-} catch(error) {
-    res.status(500).json({
-        message: error.message
-    });
-}
-};
-
-
-// GET /api/restaurants/:id
-const getRestaurantById = async (req,res) =>{
-    try{
-         const restaurant = await Resturant.findById(req.params.id);
-         if (!restaurant){
-            return res.status(404).json({ message: 'Restaurant not found'});
-         }
-
-         res.json({ successs: true , data: restaurant });
-    } catch(error){
-        res.status(500).json({message: error.message});
+      });
     }
+
+    const restaurants = await Restaurant.find()
+      .sort({ rating: -1 })
+      .skip((parseInt(page) - 1) * parseInt(limit))
+      .limit(parseInt(limit));
+
+    res.json({
+      success: true,
+      count: restaurants.length,
+      data: restaurants
+    });
+
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };
 
-//POST /api/restaurants
-
-const createRestaurant = async (req,res) =>{
-    try{
-        const { name , cuisine,address,longitude,latitude,image } = req.body;
-        const restaurant = await Resturant.create({
-            owner: req.user._id,
-            name,
-            cuisine,
-            address,
-            image,
-            location:{
-                type: 'Point',
-                coordinates:[parseFloat(longitude), parseFloat(latitude)]
-            }
-        });
-
-        res.status(201).json({ success :true , data: restaurant});
-    } catch (error) {
-        res.status(500).json({ message: error.message});
-
+const getRestaurantById = async (req, res) => {
+  try {
+    const restaurant = await Restaurant.findById(req.params.id);
+    if (!restaurant) {
+      return res.status(404).json({ message: 'Restaurant not found' });
     }
+    res.json({ success: true, data: restaurant });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };
 
-//PUT /api/restaurants/:id
+const createRestaurant = async (req, res) => {
+  try {
+    const { name, cuisine, address, longitude, latitude, image } = req.body;
+   
+    const restaurant = await Restaurant.create({
+      owner: req.user._id,
+      name,
+      cuisine,
+      address,
+      image,
+      location: {
+        type: 'Point',
+        coordinates: [parseFloat(longitude), parseFloat(latitude)]
+      }
+    });
+    res.status(201).json({ success: true, data: restaurant });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 const updateRestaurant = async (req, res) => {
   try {
     const restaurant = await Restaurant.findByIdAndUpdate(
@@ -129,4 +114,4 @@ const updateRestaurant = async (req, res) => {
   }
 };
 
-export { getRestaurants , getRestaurantById , createRestaurant ,updateRestaurant};
+export { getRestaurants, getRestaurantById, createRestaurant, updateRestaurant };
