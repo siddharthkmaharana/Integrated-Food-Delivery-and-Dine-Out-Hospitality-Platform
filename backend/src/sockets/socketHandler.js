@@ -23,7 +23,7 @@ const socketHandler = (io) => {
     // Order status updates
     socket.on('update_order_status', (data) => {
       const { orderId, status } = data;
-      io.to(orderId).emit('order_status_updated', {
+      io.to(orderId).emit('order_update', {
         orderId,
         status,
         timestamp: new Date()
