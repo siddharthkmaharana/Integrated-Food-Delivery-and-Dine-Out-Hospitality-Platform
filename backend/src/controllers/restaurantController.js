@@ -42,11 +42,7 @@ const getRestaurants = async (req, res) => {
       ];
 
       const restaurants = await Restaurant.aggregate(pipeline);
-      return res.json({
-        success: true,
-        count: restaurants.length,
-        data: restaurants
-      });
+      return res.json(restaurants);
     }
 
     const restaurants = await Restaurant.find()
@@ -54,11 +50,7 @@ const getRestaurants = async (req, res) => {
       .skip((parseInt(page) - 1) * parseInt(limit))
       .limit(parseInt(limit));
 
-    res.json({
-      success: true,
-      count: restaurants.length,
-      data: restaurants
-    });
+    res.json(restaurants);
 
   } catch (error) {
     res.status(500).json({ message: error.message });
