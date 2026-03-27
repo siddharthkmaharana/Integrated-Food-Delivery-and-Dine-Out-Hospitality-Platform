@@ -45,14 +45,21 @@ export default function Restaurants() {
     const getFiltered = () => {
         let result = [...restaurants];
         if (searchQuery) {
-            result = result.filter(r =>
-                r.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                r.cuisine?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                r.city?.toLowerCase().includes(searchQuery.toLowerCase())
-            );
+            result = result.filter(r => {
+                const cuisineMatch = Array.isArray(r.cuisine) 
+                  ? r.cuisine.some(c => c.toLowerCase().includes(searchQuery.toLowerCase()))
+                  : typeof r.cuisine === 'string' && r.cuisine.toLowerCase().includes(searchQuery.toLowerCase());
+                return r.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                       cuisineMatch ||
+                       r.city?.toLowerCase().includes(searchQuery.toLowerCase());
+            });
         }
         if (filters.cuisine !== "All") {
-            result = result.filter(r => r.cuisine?.toLowerCase().includes(filters.cuisine.toLowerCase()));
+            result = result.filter(r => {
+                return Array.isArray(r.cuisine)
+                  ? r.cuisine.some(c => c.toLowerCase().includes(filters.cuisine.toLowerCase()))
+                  : typeof r.cuisine === 'string' && r.cuisine.toLowerCase().includes(filters.cuisine.toLowerCase());
+            });
         }
         if (filters.minRating > 0) {
             result = result.filter(r => (r.rating || 0) >= filters.minRating);

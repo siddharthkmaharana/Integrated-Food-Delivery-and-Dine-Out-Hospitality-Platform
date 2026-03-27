@@ -41,9 +41,18 @@ export default function Home() {
   }, []);
 
   const filtered = restaurants.filter(r => {
-    const matchSearch = r.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      r.cuisine?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchCat = selectedCategory === "All" || r.cuisine?.toLowerCase().includes(selectedCategory.toLowerCase());
+    const cuisineMatch = Array.isArray(r.cuisine) 
+      ? r.cuisine.some(c => c.toLowerCase().includes(searchQuery.toLowerCase()))
+      : typeof r.cuisine === 'string' && r.cuisine.toLowerCase().includes(searchQuery.toLowerCase());
+      
+    const matchSearch = r.name?.toLowerCase().includes(searchQuery.toLowerCase()) || cuisineMatch;
+    
+    const catMatch = Array.isArray(r.cuisine)
+      ? r.cuisine.some(c => c.toLowerCase().includes(selectedCategory.toLowerCase()))
+      : typeof r.cuisine === 'string' && r.cuisine.toLowerCase().includes(selectedCategory.toLowerCase());
+      
+    const matchCat = selectedCategory === "All" || catMatch;
+    
     return matchSearch && matchCat;
   });
 
@@ -52,7 +61,7 @@ export default function Home() {
 
   return (
     <div className="bg-gray-50">
-      <HeroSection searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
+      <HeroSection searchQuery={searchQuery} setSearchQuery={setSearchQuery} restaurants={restaurants} />
 
       {/* Category Pills */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">

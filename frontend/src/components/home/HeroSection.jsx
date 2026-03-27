@@ -1,6 +1,6 @@
 import { Search } from "lucide-react";
 
-export default function HeroSection({ searchQuery, setSearchQuery }) {
+export default function HeroSection({ searchQuery, setSearchQuery, restaurants }) {
     return (
         <div className="relative overflow-hidden bg-gradient-to-br from-orange-500 via-red-500 to-rose-600 text-white">
             {/* Background pattern */}
@@ -25,8 +25,8 @@ export default function HeroSection({ searchQuery, setSearchQuery }) {
                         Order from 1000+ restaurants or book a table at your favorite spot.
                     </p>
 
-                    <div className="flex gap-3 bg-white rounded-2xl p-2 shadow-2xl max-w-xl">
-                        <div className="flex items-center gap-2 px-3 flex-1">
+                     <div className="flex gap-3 bg-white rounded-2xl p-2 shadow-2xl max-w-xl">
+                        <div className="relative flex items-center gap-2 px-3 flex-1">
                             <Search className="w-5 h-5 text-gray-400 flex-shrink-0" />
                             <input
                                 type="text"
@@ -35,6 +35,47 @@ export default function HeroSection({ searchQuery, setSearchQuery }) {
                                 onChange={e => setSearchQuery(e.target.value)}
                                 className="w-full text-gray-900 placeholder-gray-400 outline-none text-sm font-medium bg-transparent"
                             />
+                            {/* Search Suggestions Dropdown */}
+                            {searchQuery && restaurants?.length > 0 && (
+                                <div className="absolute top-full left-0 right-0 mt-3 bg-white rounded-xl shadow-2xl overflow-hidden z-50 max-h-60 overflow-y-auto">
+                                    {(() => {
+                                        const suggestions = restaurants.filter(r => {
+                                            const cuisineMatch = Array.isArray(r.cuisine) 
+                                                ? r.cuisine.some(c => c.toLowerCase().includes(searchQuery.toLowerCase()))
+                                                : typeof r.cuisine === 'string' && r.cuisine.toLowerCase().includes(searchQuery.toLowerCase());
+                                            return r.name?.toLowerCase().includes(searchQuery.toLowerCase()) || cuisineMatch;
+                                        }).slice(0, 5);
+
+                                        if (suggestions.length === 0) {
+                                            return <div className="p-4 text-gray-500 text-sm">No restaurants found</div>;
+                                        }
+
+                                        return suggestions.map(r => (
+                                            <a 
+                                                key={r._id || r.id}
+                                                href={`/restaurant/${r._id || r.id}`}
+                                                className="block px-4 py-3 hover:bg-orange-50 border-b border-gray-100 last:border-0 transition-colors"
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-10 h-10 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                                                        <img 
+                                                            src={r.image || "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=500&q=80"} 
+                                                            alt={r.name}
+                                                            className="w-full h-full object-cover"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <div className="text-gray-900 font-bold text-sm">{r.name}</div>
+                                                        <div className="text-gray-500 text-xs">
+                                                            {Array.isArray(r.cuisine) ? r.cuisine.join(', ') : r.cuisine}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </a>
+                                        ));
+                                    })()}
+                                </div>
+                            )}
                         </div>
                         <button 
                             onClick={() => {
