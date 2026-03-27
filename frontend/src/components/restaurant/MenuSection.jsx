@@ -6,9 +6,10 @@ export default function MenuSection({ category, items, getItemQty, updateCart })
             <h3 className="text-lg font-black text-gray-900 mb-4 pb-2 border-b border-gray-100">{category}</h3>
             <div className="space-y-3">
                 {items.map(item => {
-                    const qty = getItemQty(item.id);
+                    const itemId = item._id || item.id;
+                    const qty = getItemQty(itemId);
                     return (
-                        <div key={item.id} className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex gap-4 items-center">
+                        <div key={itemId} className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex gap-4 items-center">
                             <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 mb-1">
                                     <div className={`w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 ${item.is_veg ? "border-green-500" : "border-red-500"}`}>

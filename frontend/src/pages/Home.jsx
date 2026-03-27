@@ -71,7 +71,7 @@ export default function Home() {
 
 
       {/* All/Filtered Restaurants */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-6">
+      <div id="restaurant-list" className="max-w-7xl mx-auto px-4 sm:px-6 pb-6">
         <div className="flex items-center justify-between mb-6">
           <div>
             <h2 className="text-2xl font-black text-gray-900">

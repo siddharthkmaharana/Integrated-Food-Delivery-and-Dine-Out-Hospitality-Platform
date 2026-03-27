@@ -64,8 +64,12 @@ export const api = {
   },
   menuItems: {
     filter: async (params) => {
+      if (params.restaurant_id) {
+        const { data } = await apiClient.get(`/restaurants/${params.restaurant_id}/menu`);
+        return data.data || data; // backend returns { success: true, count: X, data: items }
+      }
       const { data } = await apiClient.get('/menu-items', { params });
-      return data;
+      return data.data || data;
     },
     create: async (payload) => {
       const { data } = await apiClient.post('/menu-items', payload);

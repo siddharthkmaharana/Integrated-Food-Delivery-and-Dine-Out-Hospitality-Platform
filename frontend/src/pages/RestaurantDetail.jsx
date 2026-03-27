@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import ReviewCard from "../components/restaurant/ReviewCard";
 import MenuSection from "../components/restaurant/MenuSection";
+import { api } from "@/api/client";
 
 export default function RestaurantDetail() {
     const navigate = useNavigate();
@@ -40,12 +41,13 @@ export default function RestaurantDetail() {
     }, [restaurantId]);
 
     const getItemQty = (itemId) => {
-        const found = cart.find(c => c.id === itemId);
+        const found = cart.find(c => (c._id || c.id) === itemId);
         return found ? found.quantity : 0;
     };
 
     const updateCart = (item, delta) => {
         let updatedCart = [...cart];
+        const itemId = item._id || item.id;
         
         // Prevent cross-restaurant ordering
         if (delta > 0 && updatedCart.length > 0 && updatedCart[0].restaurant_id !== restaurantId) {
@@ -57,12 +59,12 @@ export default function RestaurantDetail() {
             }
         }
 
-        const idx = updatedCart.findIndex(c => c.id === item.id);
+        const idx = updatedCart.findIndex(c => (c._id || c.id) === itemId);
         if (idx >= 0) {
             updatedCart[idx].quantity += delta;
             if (updatedCart[idx].quantity <= 0) updatedCart.splice(idx, 1);
         } else if (delta > 0) {
-            updatedCart.push({ ...item, quantity: 1, restaurant_id: restaurantId, restaurant_name: restaurant?.name });
+            updatedCart.push({ ...item, id: itemId, quantity: 1, restaurant_id: restaurantId, restaurant_name: restaurant?.name });
         }
         setCart(updatedCart);
         localStorage.setItem("foodhub_cart", JSON.stringify(updatedCart));

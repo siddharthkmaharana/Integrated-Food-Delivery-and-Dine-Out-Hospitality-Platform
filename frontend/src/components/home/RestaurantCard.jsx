@@ -6,7 +6,7 @@ export default function RestaurantCard({ restaurant }) {
   const priceRangeMap = { "$": "Under $10", "$$": "$10-20", "$$$": "$20-30", "$$$$": "Over $30" };
 
   return (
-    <Link to={`${createPageUrl("RestaurantDetail")}?id=${restaurant.id}`}>
+    <Link to={`${createPageUrl("RestaurantDetail")}?id=${restaurant._id || restaurant.id}`}>
       <div className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 group cursor-pointer border border-gray-100 hover:-translate-y-1">
         {/* Image */}
         <div className="relative h-44 overflow-hidden bg-gradient-to-br from-orange-100 to-red-100">
@@ -21,7 +21,7 @@ export default function RestaurantCard({ restaurant }) {
               🍽️
             </div>
           )}
-          {!restaurant.is_open && (
+          {restaurant.is_open === false && (
             <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
               <span className="bg-white text-gray-800 font-bold px-3 py-1 rounded-full text-sm">Closed</span>
             </div>

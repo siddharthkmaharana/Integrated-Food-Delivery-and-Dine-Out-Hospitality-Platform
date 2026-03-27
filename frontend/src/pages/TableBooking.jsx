@@ -3,6 +3,7 @@ import { Calendar, Clock, Users, MapPin, Star, Check, ChevronRight } from "lucid
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { format, addDays } from "date-fns";
+import { api } from "@/api/client";
 
 const TIME_SLOTS = ["12:00 PM", "12:30 PM", "1:00 PM", "1:30 PM", "2:00 PM", "6:00 PM", "6:30 PM", "7:00 PM", "7:30 PM", "8:00 PM", "8:30 PM", "9:00 PM"];
 
@@ -22,7 +23,11 @@ export default function TableBooking() {
     });
 
     useEffect(() => {
-        api.restaurants.list("-rating", 20).then(data => setRestaurants(data.filter(r => r.is_approved !== false)));
+        api.restaurants.list("-rating", 20)
+            .then(data => {
+                if(Array.isArray(data)) setRestaurants(data.filter(r => r.is_approved !== false));
+            })
+            .catch(console.error);
         api.auth.me().then(setUser).catch(() => { });
     }, []);
 

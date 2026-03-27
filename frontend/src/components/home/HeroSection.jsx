@@ -36,7 +36,12 @@ export default function HeroSection({ searchQuery, setSearchQuery }) {
                                 className="w-full text-gray-900 placeholder-gray-400 outline-none text-sm font-medium bg-transparent"
                             />
                         </div>
-                        <button className="bg-gradient-to-r from-orange-500 to-red-500 text-white px-6 py-3 rounded-xl font-bold text-sm hover:from-orange-600 hover:to-red-600 transition-all shadow-lg shadow-orange-300 flex-shrink-0">
+                        <button 
+                            onClick={() => {
+                                const el = document.getElementById('restaurant-list');
+                                if (el) el.scrollIntoView({ behavior: 'smooth' });
+                            }}
+                            className="bg-gradient-to-r from-orange-500 to-red-500 text-white px-6 py-3 rounded-xl font-bold text-sm hover:from-orange-600 hover:to-red-600 transition-all shadow-lg shadow-orange-300 flex-shrink-0">
                             Find Food
                         </button>
                     </div>

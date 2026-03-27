@@ -3,6 +3,7 @@ import { Search, SlidersHorizontal, X, Star, ChevronDown } from "lucide-react";
 import RestaurantCard from "../components/home/RestaurantCard";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { api } from "../api/client";
 
 const CUISINES = ["All", "Italian", "Indian", "Chinese", "Japanese", "Mexican", "American", "Thai", "Mediterranean"];
 const RATINGS = [{ label: "4.5+", value: 4.5 }, { label: "4.0+", value: 4.0 }, { label: "3.5+", value: 3.5 }];
@@ -27,10 +28,18 @@ export default function Restaurants() {
     });
 
     useEffect(() => {
-        api.restaurants.list("-rating", 50).then(data => {
-            setRestaurants(data.filter(r => r.is_approved !== false));
-            setLoading(false);
-        });
+        api.restaurants.list("-rating", 50)
+            .then(data => {
+                if (Array.isArray(data)) {
+                    setRestaurants(data.filter(r => r.is_approved !== false));
+                }
+                setLoading(false);
+            })
+            .catch(err => {
+                console.error("Error fetching restaurants:", err);
+                setRestaurants([]);
+                setLoading(false);
+            });
     }, []);
 
     const getFiltered = () => {
