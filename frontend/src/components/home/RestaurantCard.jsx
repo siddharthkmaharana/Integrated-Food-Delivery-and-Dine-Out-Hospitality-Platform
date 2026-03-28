@@ -71,7 +71,7 @@ export default function RestaurantCard({ restaurant }) {
             </div>
             <span className="text-gray-200">·</span>
             {/* Changed $ to ₹ */}
-            <span>{restaurant.price_range || "₹₹"}</span>
+           <span>{restaurant.price_range?.replace(/\$/g, "₹") || "₹₹"}</span>
           </div>
         </div>
       </div>
