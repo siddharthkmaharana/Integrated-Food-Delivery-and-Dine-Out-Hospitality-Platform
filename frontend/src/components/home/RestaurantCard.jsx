@@ -3,7 +3,13 @@ import { createPageUrl } from "@/utils";
 import { Star, Clock, Bike } from "lucide-react";
 
 export default function RestaurantCard({ restaurant }) {
-  // Handle cuisine whether it's array or string
+  const priceRangeMap = { 
+    "₹": "Under ₹150", 
+    "₹₹": "₹150-300", 
+    "₹₹₹": "₹300-600", 
+    "₹₹₹₹": "Over ₹600" 
+  };
+
   const cuisineDisplay = Array.isArray(restaurant.cuisine)
     ? restaurant.cuisine.join(", ")
     : restaurant.cuisine || "";
@@ -25,14 +31,12 @@ export default function RestaurantCard({ restaurant }) {
             </div>
           )}
 
-          {/* Closed overlay — uses isOpen from backend */}
           {restaurant.isOpen === false && (
             <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
               <span className="bg-white text-gray-800 font-bold px-3 py-1 rounded-full text-sm">Closed</span>
             </div>
           )}
 
-          {/* Rating badge */}
           <div className="absolute top-3 left-3 bg-white/95 backdrop-blur-sm rounded-full px-2.5 py-1 flex items-center gap-1 shadow-sm">
             <Star className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500" />
             <span className="text-xs font-bold text-gray-800">
@@ -40,7 +44,6 @@ export default function RestaurantCard({ restaurant }) {
             </span>
           </div>
 
-          {/* Free delivery badge */}
           {restaurant.delivery_fee === 0 && (
             <div className="absolute top-3 right-3 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full">
               FREE Delivery
@@ -54,22 +57,21 @@ export default function RestaurantCard({ restaurant }) {
             {restaurant.name}
           </h3>
 
-          {/* Fixed: cuisine array joined with comma */}
           <p className="text-sm text-gray-500 truncate mt-0.5">{cuisineDisplay}</p>
 
           <div className="flex items-center gap-3 mt-3 text-xs text-gray-500">
             <div className="flex items-center gap-1">
               <Clock className="w-3.5 h-3.5 text-gray-400" />
-              <span>{restaurant.delivery_time || "30"} min</span>
+              <span>{restaurant.delivery_time || 30} min</span>
             </div>
             <span className="text-gray-200">·</span>
             <div className="flex items-center gap-1">
               <Bike className="w-3.5 h-3.5 text-gray-400" />
-              {/* delivery_fee not in backend so show Free by default */}
               <span>Free</span>
             </div>
             <span className="text-gray-200">·</span>
-            <span>{restaurant.price_range || "$$"}</span>
+            {/* Changed $ to ₹ */}
+            <span>{restaurant.price_range || "₹₹"}</span>
           </div>
         </div>
       </div>
