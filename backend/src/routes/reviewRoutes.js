@@ -2,6 +2,7 @@ import express from 'express';
 import Review from '../models/Review.js';
 import User from '../models/User.js';
 import Restaurant from '../models/Restaurant.js';
+import Order from '../models/Order.js';
 import { protect } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
@@ -23,6 +24,37 @@ router.get('/', async (req, res) => {
     if (req.query.restaurant) filter.restaurant = req.query.restaurant;
     const reviews = await Review.find(filter).populate('user', 'name');
     res.json(reviews);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// AI keyword suggestions based on ordered items
+router.get('/suggestions/:orderId', protect, async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.orderId);
+    if (!order) return res.status(404).json({ message: 'Order not found' });
+
+    const itemNames = order.items.map(item => item.name.toLowerCase());
+    const suggestions = [];
+
+    if (itemNames.some(n => n.includes('chicken') || n.includes('mutton') || n.includes('fish'))) {
+      suggestions.push('tender', 'juicy', 'well-cooked', 'spicy', 'flavorful');
+    }
+    if (itemNames.some(n => n.includes('pizza') || n.includes('burger') || n.includes('sandwich'))) {
+      suggestions.push('crispy', 'fresh', 'cheesy', 'filling', 'delicious');
+    }
+    if (itemNames.some(n => n.includes('biryani') || n.includes('rice') || n.includes('curry'))) {
+      suggestions.push('aromatic', 'authentic', 'rich', 'flavorful', 'generous');
+    }
+
+    const defaultSuggestions = ['quick delivery', 'hot food', 'good packaging', 'value for money', 'would order again'];
+    const allSuggestions = [...new Set([...suggestions, ...defaultSuggestions])];
+
+    res.json({
+      suggestions: allSuggestions,
+      tip: 'Use these keywords in your review to earn bonus loyalty points!'
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
