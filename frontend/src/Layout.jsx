@@ -7,7 +7,6 @@ import {
     ChevronDown, LogOut, Settings, Package
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -20,10 +19,12 @@ export default function Layout({ children, currentPageName }) {
     const [user, setUser] = useState(null);
     const [cartCount, setCartCount] = useState(0);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const [location, setLocation] = useState("Detecting location...");
 
     useEffect(() => {
         api.auth.me().then(setUser).catch(() => { });
         updateCartCount();
+        getLocation();
         window.addEventListener("storage", updateCartCount);
         window.addEventListener("cartUpdated", updateCartCount);
         return () => {
@@ -31,6 +32,37 @@ export default function Layout({ children, currentPageName }) {
             window.removeEventListener("cartUpdated", updateCartCount);
         };
     }, []);
+
+    const getLocation = () => {
+        if (!navigator.geolocation) {
+            setLocation("Location unavailable");
+            return;
+        }
+        navigator.geolocation.getCurrentPosition(
+            async (position) => {
+                const { latitude, longitude } = position.coords;
+                try {
+                    // Use free reverse geocoding API
+                    const res = await fetch(
+                        `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`
+                    );
+                    const data = await res.json();
+                    const city = data.address?.city || 
+                                 data.address?.town || 
+                                 data.address?.village || 
+                                 data.address?.county || 
+                                 "Your Location";
+                    const state = data.address?.state || "";
+                    setLocation(`${city}, ${state}`);
+                } catch {
+                    setLocation("Location found");
+                }
+            },
+            () => {
+                setLocation("Bengaluru, Karnataka");
+            }
+        );
+    };
 
     const updateCartCount = () => {
         const cart = JSON.parse(localStorage.getItem("foodhub_cart") || "[]");
@@ -43,13 +75,17 @@ export default function Layout({ children, currentPageName }) {
         { name: "Dine-Out", page: "TableBooking" },
     ];
 
+    // Fix: backend returns 'name' not 'full_name'
+    const userName = user?.name || user?.full_name || "Account";
+    const userInitial = userName[0].toUpperCase();
+
     return (
         <div className="min-h-screen bg-gray-50">
             <style>{`
-        * { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
-        .scrollbar-hide::-webkit-scrollbar { display: none; }
-        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
-      `}</style>
+                * { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
+                .scrollbar-hide::-webkit-scrollbar { display: none; }
+                .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+            `}</style>
 
             {/* Navbar */}
             <nav className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm shadow-sm border-b border-gray-100">
@@ -65,10 +101,16 @@ export default function Layout({ children, currentPageName }) {
                             </span>
                         </Link>
 
-                        {/* Location pill */}
-                        <div className="hidden md:flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded-full px-3 py-1.5 cursor-pointer hover:border-orange-300 transition-colors">
+                        {/* Location pill — now real time */}
+                        <div
+                            onClick={getLocation}
+                            className="hidden md:flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded-full px-3 py-1.5 cursor-pointer hover:border-orange-300 transition-colors"
+                            title="Click to refresh location"
+                        >
                             <MapPin className="w-3.5 h-3.5 text-orange-500" />
-                            <span className="text-sm font-medium text-gray-700">Bengaluru, karnataka, Ind</span>
+                            <span className="text-sm font-medium text-gray-700 max-w-[180px] truncate">
+                                {location}
+                            </span>
                             <ChevronDown className="w-3 h-3 text-gray-400" />
                         </div>
 
@@ -78,10 +120,11 @@ export default function Layout({ children, currentPageName }) {
                                 <Link
                                     key={link.page}
                                     to={createPageUrl(link.page)}
-                                    className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${currentPageName === link.page
-                                        ? "bg-orange-50 text-orange-600"
-                                        : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
-                                        }`}
+                                    className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+                                        currentPageName === link.page
+                                            ? "bg-orange-50 text-orange-600"
+                                            : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                                    }`}
                                 >
                                     {link.name}
                                 </Link>
@@ -108,18 +151,19 @@ export default function Layout({ children, currentPageName }) {
                                         <button className="flex items-center gap-2 pl-1 pr-3 py-1 rounded-full hover:bg-gray-100 transition-colors border border-gray-200">
                                             <div className="w-7 h-7 rounded-full bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center">
                                                 <span className="text-white font-bold text-xs">
-                                                    {(user.full_name || user.email || "U")[0].toUpperCase()}
+                                                    {userInitial}
                                                 </span>
                                             </div>
                                             <span className="text-sm font-medium text-gray-700 hidden sm:block max-w-[80px] truncate">
-                                                {user.full_name?.split(" ")[0] || "Account"}
+                                                {userName.split(" ")[0]}
                                             </span>
                                         </button>
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end" className="w-52 rounded-2xl shadow-xl border-gray-100 p-1">
                                         <div className="px-3 py-2.5 border-b border-gray-100 mb-1">
-                                            <p className="font-bold text-sm text-gray-900">{user.full_name}</p>
+                                            <p className="font-bold text-sm text-gray-900">{userName}</p>
                                             <p className="text-xs text-gray-400 truncate">{user.email}</p>
+                                            <p className="text-xs text-orange-500 font-medium mt-0.5 capitalize">{user.role}</p>
                                         </div>
                                         <DropdownMenuItem asChild className="rounded-xl">
                                             <Link to={createPageUrl("Profile")} className="flex items-center gap-2.5 px-3 py-2">
@@ -136,14 +180,11 @@ export default function Layout({ children, currentPageName }) {
                                                 <Heart className="w-4 h-4 text-gray-400" /> Favorites
                                             </Link>
                                         </DropdownMenuItem>
-                                        {user.role === "admin" && (
+
+                                        {/* Show dashboard based on role */}
+                                        {(user.role === "restaurant") && (
                                             <>
                                                 <DropdownMenuSeparator />
-                                                <DropdownMenuItem asChild className="rounded-xl">
-                                                    <Link to={createPageUrl("AdminDashboard")} className="flex items-center gap-2.5 px-3 py-2 text-purple-600">
-                                                        <Settings className="w-4 h-4" /> Admin Panel
-                                                    </Link>
-                                                </DropdownMenuItem>
                                                 <DropdownMenuItem asChild className="rounded-xl">
                                                     <Link to={createPageUrl("RestaurantDashboard")} className="flex items-center gap-2.5 px-3 py-2 text-blue-600">
                                                         <Settings className="w-4 h-4" /> Restaurant Panel
@@ -151,6 +192,17 @@ export default function Layout({ children, currentPageName }) {
                                                 </DropdownMenuItem>
                                             </>
                                         )}
+                                        {(user.role === "admin") && (
+                                            <>
+                                                <DropdownMenuSeparator />
+                                                <DropdownMenuItem asChild className="rounded-xl">
+                                                    <Link to={createPageUrl("AdminDashboard")} className="flex items-center gap-2.5 px-3 py-2 text-purple-600">
+                                                        <Settings className="w-4 h-4" /> Admin Panel
+                                                    </Link>
+                                                </DropdownMenuItem>
+                                            </>
+                                        )}
+
                                         <DropdownMenuSeparator />
                                         <DropdownMenuItem
                                             onClick={() => api.auth.logout()}
@@ -185,10 +237,11 @@ export default function Layout({ children, currentPageName }) {
                                 <Link
                                     key={link.page}
                                     to={createPageUrl(link.page)}
-                                    className={`flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition-colors ${currentPageName === link.page
-                                        ? "bg-orange-50 text-orange-600"
-                                        : "text-gray-700 hover:bg-gray-100"
-                                        }`}
+                                    className={`flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition-colors ${
+                                        currentPageName === link.page
+                                            ? "bg-orange-50 text-orange-600"
+                                            : "text-gray-700 hover:bg-gray-100"
+                                    }`}
                                     onClick={() => setMobileMenuOpen(false)}
                                 >
                                     {link.name}
@@ -214,7 +267,7 @@ export default function Layout({ children, currentPageName }) {
                                 <span className="text-white font-black text-lg">FoodHub</span>
                             </div>
                             <p className="text-sm leading-relaxed text-gray-500">
-                                Delivering happiness, one meal at a time. Order food or book tables at your favorite restaurants.
+                                Delivering happiness, one meal at a time.
                             </p>
                         </div>
                         <div>

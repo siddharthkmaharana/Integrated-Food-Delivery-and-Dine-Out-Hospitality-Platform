@@ -113,7 +113,7 @@ export default function Home() {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-            {filtered.slice(0, 12).map(r => <RestaurantCard key={r.id} restaurant={r} />)}
+            {filtered.slice(0, 12).map(r => <RestaurantCard key={r._id} restaurant={r} />)}
           </div>
         )}
       </div>
@@ -126,7 +126,7 @@ export default function Home() {
             <h2 className="text-2xl font-black text-gray-900">Top Rated</h2>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {topRated.map(r => <RestaurantCard key={r.id} restaurant={r} />)}
+            {topRated.map(r => <RestaurantCard key={r._id} restaurant={r} />)}
           </div>
         </div>
       )}
@@ -139,7 +139,7 @@ export default function Home() {
             <h2 className="text-2xl font-black text-gray-900">Fastest Delivery</h2>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {fastDelivery.map(r => <RestaurantCard key={r.id} restaurant={r} />)}
+            {fastDelivery.map(r => <RestaurantCard key={r._id} restaurant={r} />)}
           </div>
         </div>
       )}
