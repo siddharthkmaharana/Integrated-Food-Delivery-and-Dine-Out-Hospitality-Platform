@@ -7,15 +7,15 @@ import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 
 const ORDER_STEPS = [
-    { status: "placed", label: "Order Placed", icon: Package, desc: "Your order has been placed" },
-    { status: "confirmed", label: "Confirmed", icon: CheckCircle2, desc: "Restaurant confirmed your order" },
-    { status: "preparing", label: "Preparing", icon: ChefHat, desc: "Chef is preparing your food" },
-    { status: "picked_up", label: "Picked Up", icon: Bike, desc: "Delivery partner has picked up" },
-    { status: "out_for_delivery", label: "On the Way", icon: Bike, desc: "Your order is almost there!" },
-    { status: "delivered", label: "Delivered", icon: CheckCircle2, desc: "Enjoy your meal! 🎉" },
+    { status: "PENDING", label: "Order Placed", icon: Package, desc: "Your order has been placed" },
+    { status: "ACCEPTED", label: "Confirmed", icon: CheckCircle2, desc: "Restaurant confirmed your order" },
+    { status: "PREPARING", label: "Preparing", icon: ChefHat, desc: "Chef is preparing your food" },
+    { status: "COURIER_ASSIGNED", label: "Courier Assigned", icon: Bike, desc: "Delivery partner assigned" },
+    { status: "DELIVERING", label: "On the Way", icon: Bike, desc: "Your order is almost there!" },
+    { status: "DELIVERED", label: "Delivered", icon: CheckCircle2, desc: "Enjoy your meal! 🎉" },
 ];
 
-const STATUS_INDEX = { placed: 0, confirmed: 1, preparing: 2, picked_up: 3, out_for_delivery: 4, delivered: 5 };
+const STATUS_INDEX = { PENDING: 0, PLACED: 0, ACCEPTED: 1, PREPARING: 2, COURIER_ASSIGNED: 3, DELIVERING: 4, DELIVERED: 5 };
 
 export default function OrderTracking() {
     const urlParams = new URLSearchParams(window.location.search);
@@ -49,8 +49,8 @@ export default function OrderTracking() {
     );
 
     const currentStep = STATUS_INDEX[order.status] ?? 0;
-    const isDelivered = order.status === "delivered";
-    const isCancelled = order.status === "cancelled";
+    const isDelivered = order.status === "DELIVERED";
+    const isCancelled = order.status === "CANCELLED";
 
     return (
         <div className="min-h-screen bg-gray-50">
@@ -136,7 +136,7 @@ export default function OrderTracking() {
                             <span>Delivery</span><span>${order.delivery_fee?.toFixed(2)}</span>
                         </div>
                         <div className="flex justify-between font-black text-gray-900 text-base pt-1">
-                            <span>Total</span><span className="text-orange-500">${order.total?.toFixed(2)}</span>
+                            <span>Total</span><span className="text-orange-500">${order.totalAmount?.toFixed(2) || order.total?.toFixed(2)}</span>
                         </div>
                     </div>
                 </div>
@@ -156,7 +156,7 @@ export default function OrderTracking() {
                 {/* Actions */}
                 <div className="flex gap-3">
                     {isDelivered && (
-                        <Link to={`${createPageUrl("RestaurantDetail")}?id=${order.restaurant_id}`} className="flex-1">
+                        <Link to={`${createPageUrl("RestaurantDetail")}?id=${order.restaurant?._id || order.restaurant}&order_id=${order._id || order.id}`} className="flex-1">
                             <Button className="w-full bg-orange-500 hover:bg-orange-600 text-white rounded-2xl h-12 font-bold">
                                 <Star className="w-4 h-4 mr-2" /> Rate & Review
                             </Button>

@@ -108,6 +108,10 @@ export const api = {
       const { data } = await apiClient.put(`/orders/${id}`, payload);
       return data;
     },
+    pay: async (id) => {
+      const { data } = await apiClient.post(`/orders/${id}/pay`);
+      return data;
+    },
     subscribe: (cb) => {
       const socket = io('http://localhost:5000');
       socket.on('order_update', cb);
@@ -125,6 +129,10 @@ export const api = {
     },
     create: async (payload) => {
       const { data } = await apiClient.post('/reviews', payload);
+      return data;
+    },
+    getSuggestions: async (orderId) => {
+      const { data } = await apiClient.get(`/reviews/suggestions/${orderId}`);
       return data;
     }
   },
