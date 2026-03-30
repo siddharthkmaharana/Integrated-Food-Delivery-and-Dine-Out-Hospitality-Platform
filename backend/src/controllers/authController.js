@@ -1,51 +1,95 @@
-import User from '../models/User.js';
-import jwt from 'jsonwebtoken';
+import User from "../models/User.js";
+import jwt from "jsonwebtoken";
 
 const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRE });
+  if (!process.env.JWT_SECRET) {
+    throw new Error("JWT_SECRET is missing in .env");
+  }
+
+  return jwt.sign(
+    { id },
+    process.env.JWT_SECRET,
+    {
+      expiresIn: process.env.JWT_EXPIRE || "7d",
+    }
+  );
 };
 
 const register = async (req, res) => {
   try {
     const { name, email, password, role } = req.body;
-    const userExists = await User.findOne({ email });
-    if (userExists) return res.status(400).json({ message: 'User already exists' });
 
-    const user = await User.create({ name, email, password, role });
-    res.status(201).json({
+    if (!name || !email || !password) {
+      return res.status(400).json({
+        message: "Please fill all required fields",
+      });
+    }
+
+    const userExists = await User.findOne({
+      email: email.toLowerCase(),
+    });
+
+    if (userExists) {
+      return res.status(400).json({
+        message: "User already exists",
+      });
+    }
+
+    const user = await User.create({
+      name: name.trim(),
+      email: email.toLowerCase(),
+      password,
+      role,
+    });
+
+    const token = generateToken(user._id);
+
+    return res.status(201).json({
       _id: user._id,
       name: user.name,
       email: user.email,
       role: user.role,
-      token: generateToken(user._id)
+      token,
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("Register error:", error);
+    return res.status(500).json({
+      message: error.message || "Registration failed",
+    });
   }
 };
 
 const login = async (req, res) => {
   try {
     const { email, password } = req.body;
-    const user = await User.findOne({ email });
+
+    const user = await User.findOne({
+      email: email.toLowerCase(),
+    });
+
     if (user && (await user.matchPassword(password))) {
-      res.json({
+      return res.json({
         _id: user._id,
         name: user.name,
         email: user.email,
         role: user.role,
-        token: generateToken(user._id)
+        token: generateToken(user._id),
       });
-    } else {
-      res.status(401).json({ message: 'Invalid email or password' });
     }
+
+    return res.status(401).json({
+      message: "Invalid email or password",
+    });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("Login error:", error);
+    return res.status(500).json({
+      message: error.message,
+    });
   }
 };
 
 const getProfile = async (req, res) => {
-  res.json(req.user);
+  return res.json(req.user);
 };
 
 const updateProfile = async (req, res) => {
@@ -54,10 +98,13 @@ const updateProfile = async (req, res) => {
       req.user._id,
       req.body,
       { new: true, runValidators: true }
-    ).select('-password');
-    res.json(user);
+    ).select("-password");
+
+    return res.json(user);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    return res.status(500).json({
+      message: error.message,
+    });
   }
 };
 
