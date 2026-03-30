@@ -1,247 +1,202 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { createPageUrl } from "@/utils";
-import { MapPin, CreditCard, Wallet, Banknote, ChevronRight, ArrowLeft, Check } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { api } from '@/api/client';
+import { createPageUrl } from '@/utils';
 
 export default function Checkout() {
   const navigate = useNavigate();
-  const [cart, setCart] = useState([]);
-  const [user, setUser] = useState(null);
-  const [step, setStep] = useState(1);
+  const [address, setAddress] = useState('');
   const [loading, setLoading] = useState(false);
-  const [form, setForm] = useState({
-    address: "",
-    city: "",
-    pincode: "",
-    instructions: "",
-    payment: "cash",
-  });
+  const [paymentLoading, setPaymentLoading] = useState(false);
+  const [order, setOrder] = useState(null);
+  const [error, setError] = useState('');
+  const [step, setStep] = useState(1); // 1=address, 2=payment, 3=success
 
-  useEffect(() => {
-    const c = JSON.parse(localStorage.getItem("foodhub_cart") || "[]");
-    if (c.length === 0) { navigate(createPageUrl("Cart")); return; }
-    setCart(c);
-    api.auth.me().then(u => {
-      setUser(u);
-    }).catch(() => navigate(createPageUrl("Cart")));
-  }, []);
+  const cart = JSON.parse(localStorage.getItem('foodhub_cart') || '[]');
+  const restaurantId = localStorage.getItem('foodhub_restaurant_id');
+  const restaurantName = localStorage.getItem('foodhub_restaurant_name');
 
-  const subtotal = cart.reduce((s, i) => s + i.price * i.quantity, 0);
-  const deliveryFee = cart[0]?.delivery_fee ?? 2.99;
-  const taxes = subtotal * 0.08;
-  const total = subtotal + deliveryFee + taxes;
+  const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
-  const placeOrder = async () => {
-    if (!form.address || !form.city) { alert("Please fill delivery address."); return; }
+  const handlePlaceOrder = async () => {
+    if (!address.trim()) return setError('Please enter delivery address');
     setLoading(true);
-    const order = await api.orders.create({
-      user_email: user.email,
-      user_name: user.full_name || user.email,
-      restaurant_id: cart[0].restaurant_id,
-      restaurant_name: cart[0].restaurant_name,
-      items: cart.map(i => ({ id: i.id, name: i.name, price: i.price, quantity: i.quantity })),
-      subtotal,
-      delivery_fee: deliveryFee,
-      discount: 0,
-      total,
-      status: "placed",
-      delivery_address: `${form.address}, ${form.city} ${form.pincode}`,
-      delivery_instructions: form.instructions,
-      payment_method: form.payment,
-      payment_status: form.payment === "cash" ? "pending" : "paid",
-      estimated_time: 35,
-    });
-    localStorage.removeItem("foodhub_cart");
-    window.dispatchEvent(new Event("cartUpdated"));
-    navigate(`${createPageUrl("OrderTracking")}?id=${order.id}`);
+    setError('');
+    try {
+      const items = cart.map(item => ({
+        menuItemId: item._id,
+        quantity: item.quantity
+      }));
+      const orderData = await api.orders.create({
+        restaurantId,
+        items,
+        deliveryAddress: address
+      });
+      setOrder(orderData);
+      setStep(2);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to place order');
+    }
+    setLoading(false);
   };
 
-  const STEPS = ["Delivery", "Payment", "Review"];
+  const handlePayment = async () => {
+    setPaymentLoading(true);
+    setError('');
+    try {
+      await api.orders.update(order._id, { paymentStatus: 'PAID', status: 'ACCEPTED' });
+      localStorage.removeItem('foodhub_cart');
+      localStorage.removeItem('foodhub_restaurant_id');
+      localStorage.removeItem('foodhub_restaurant_name');
+      window.dispatchEvent(new Event('cartUpdated'));
+      setStep(3);
+    } catch (err) {
+      setError('Payment failed. Please try again.');
+    }
+    setPaymentLoading(false);
+  };
 
-  if (!user || cart.length === 0) return (
-    <div className="min-h-screen flex items-center justify-center">
-      <div className="animate-spin w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full" />
-    </div>
-  );
+  if (cart.length === 0 && step !== 3) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-6xl mb-4">🛒</div>
+          <h2 className="text-2xl font-bold text-gray-700">Your cart is empty</h2>
+          <button onClick={() => navigate(createPageUrl('Home'))} className="mt-4 bg-orange-500 text-white px-6 py-2 rounded-xl font-bold">
+            Browse Restaurants
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
-        <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-gray-500 hover:text-gray-800 mb-6 font-medium text-sm transition-colors">
-          <ArrowLeft className="w-4 h-4" /> Back to Cart
-        </button>
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="max-w-2xl mx-auto px-4">
 
-        <h1 className="text-3xl font-black text-gray-900 mb-8">Checkout</h1>
-
-        {/* Progress Steps */}
-        <div className="flex items-center gap-2 mb-8">
-          {STEPS.map((s, i) => (
+        {/* Steps */}
+        <div className="flex items-center justify-center gap-4 mb-8">
+          {['Delivery', 'Payment', 'Confirmed'].map((s, i) => (
             <div key={s} className="flex items-center gap-2">
-              <div
-                onClick={() => i + 1 < step && setStep(i + 1)}
-                className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all ${i + 1 < step ? "bg-green-500 text-white cursor-pointer" :
-                    i + 1 === step ? "bg-orange-500 text-white" : "bg-gray-200 text-gray-500"
-                  }`}
-              >
-                {i + 1 < step ? <Check className="w-4 h-4" /> : i + 1}
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${step > i ? 'bg-orange-500 text-white' : step === i + 1 ? 'bg-orange-500 text-white' : 'bg-gray-200 text-gray-400'}`}>
+                {step > i + 1 ? '✓' : i + 1}
               </div>
-              <span className={`text-sm font-semibold hidden sm:block ${i + 1 === step ? "text-gray-900" : "text-gray-400"}`}>{s}</span>
-              {i < STEPS.length - 1 && <div className={`w-8 h-0.5 mx-1 ${i + 1 < step ? "bg-green-500" : "bg-gray-200"}`} />}
+              <span className={`text-sm font-semibold ${step === i + 1 ? 'text-orange-500' : 'text-gray-400'}`}>{s}</span>
+              {i < 2 && <div className="w-8 h-0.5 bg-gray-200" />}
             </div>
           ))}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
-          <div className="lg:col-span-3">
-            {step === 1 && (
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                <div className="flex items-center gap-2 mb-6">
-                  <MapPin className="w-5 h-5 text-orange-500" />
-                  <h2 className="font-black text-gray-900 text-lg">Delivery Address</h2>
-                </div>
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wide block mb-1.5">Street Address *</label>
-                    <Input
-                      placeholder="123 Main Street, Apt 4B"
-                      value={form.address}
-                      onChange={e => setForm(f => ({ ...f, address: e.target.value }))}
-                      className="rounded-xl border-gray-200 h-11"
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-xs font-bold text-gray-500 uppercase tracking-wide block mb-1.5">City *</label>
-                      <Input
-                        placeholder="New York"
-                        value={form.city}
-                        onChange={e => setForm(f => ({ ...f, city: e.target.value }))}
-                        className="rounded-xl border-gray-200 h-11"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs font-bold text-gray-500 uppercase tracking-wide block mb-1.5">ZIP Code</label>
-                      <Input
-                        placeholder="10001"
-                        value={form.pincode}
-                        onChange={e => setForm(f => ({ ...f, pincode: e.target.value }))}
-                        className="rounded-xl border-gray-200 h-11"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wide block mb-1.5">Delivery Instructions</label>
-                    <textarea
-                      placeholder="Leave at door, ring bell, etc."
-                      value={form.instructions}
-                      onChange={e => setForm(f => ({ ...f, instructions: e.target.value }))}
-                      className="w-full border border-gray-200 rounded-xl p-3 text-sm outline-none focus:border-orange-400 resize-none h-20"
-                    />
-                  </div>
-                  <Button
-                    onClick={() => setStep(2)}
-                    disabled={!form.address || !form.city}
-                    className="w-full bg-orange-500 hover:bg-orange-600 text-white rounded-xl h-12 font-bold"
-                  >
-                    Continue to Payment <ChevronRight className="w-4 h-4 ml-1" />
-                  </Button>
-                </div>
-              </div>
-            )}
+        {/* Step 1 — Address */}
+        {step === 1 && (
+          <div className="bg-white rounded-2xl shadow-sm p-6 border border-gray-100">
+            <h2 className="text-xl font-black text-gray-900 mb-6">📍 Delivery Address</h2>
 
-            {step === 2 && (
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                <div className="flex items-center gap-2 mb-6">
-                  <CreditCard className="w-5 h-5 text-orange-500" />
-                  <h2 className="font-black text-gray-900 text-lg">Payment Method</h2>
-                </div>
-                <div className="space-y-3">
-                  {[
-                    { id: "cash", label: "Cash on Delivery", icon: Banknote, desc: "Pay when food arrives" },
-                    { id: "card", label: "Credit / Debit Card", icon: CreditCard, desc: "Visa, Mastercard, Amex" },
-                    { id: "upi", label: "UPI / Digital Wallet", icon: Wallet, desc: "GPay, PhonePe, Paytm" },
-                  ].map(m => (
-                    <button
-                      key={m.id}
-                      onClick={() => setForm(f => ({ ...f, payment: m.id }))}
-                      className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all text-left ${form.payment === m.id ? "border-orange-500 bg-orange-50" : "border-gray-200 hover:border-gray-300"
-                        }`}
-                    >
-                      <div className={`p-2.5 rounded-xl ${form.payment === m.id ? "bg-orange-500 text-white" : "bg-gray-100 text-gray-500"}`}>
-                        <m.icon className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <div className="font-bold text-gray-900 text-sm">{m.label}</div>
-                        <div className="text-xs text-gray-400">{m.desc}</div>
-                      </div>
-                      {form.payment === m.id && (
-                        <div className="ml-auto w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center">
-                          <Check className="w-3 h-3 text-white" />
-                        </div>
-                      )}
-                    </button>
-                  ))}
-                </div>
-                <Button
-                  onClick={() => setStep(3)}
-                  className="w-full bg-orange-500 hover:bg-orange-600 text-white rounded-xl h-12 font-bold mt-6"
-                >
-                  Review Order <ChevronRight className="w-4 h-4 ml-1" />
-                </Button>
-              </div>
-            )}
+            {error && <div className="bg-red-50 text-red-600 p-3 rounded-xl mb-4 text-sm">⚠️ {error}</div>}
 
-            {step === 3 && (
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-5">
-                <h2 className="font-black text-gray-900 text-lg">Review Your Order</h2>
-                <div className="bg-gray-50 rounded-xl p-4 space-y-2">
-                  {cart.map(item => (
-                    <div key={item.id} className="flex justify-between text-sm">
-                      <span className="text-gray-600">{item.name} × {item.quantity}</span>
-                      <span className="font-semibold text-gray-900">${(item.price * item.quantity).toFixed(2)}</span>
-                    </div>
-                  ))}
-                </div>
-                <div className="bg-blue-50 rounded-xl p-4 text-sm">
-                  <p className="font-bold text-gray-700 mb-1">📍 Delivering to</p>
-                  <p className="text-gray-600">{form.address}, {form.city} {form.pincode}</p>
-                </div>
-                <div className="bg-green-50 rounded-xl p-4 text-sm">
-                  <p className="font-bold text-gray-700 mb-1">💳 Payment</p>
-                  <p className="text-gray-600 capitalize">{form.payment === "cash" ? "Cash on Delivery" : form.payment === "card" ? "Card" : "UPI"}</p>
-                </div>
-                <Button
-                  onClick={placeOrder}
-                  disabled={loading}
-                  className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white h-14 rounded-2xl font-black text-base shadow-xl shadow-orange-200"
-                >
-                  {loading ? "Placing Order..." : `Place Order · $${total.toFixed(2)}`}
-                </Button>
-              </div>
-            )}
-          </div>
+            <div className="mb-4">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Full Address</label>
+              <textarea
+                rows={3}
+                placeholder="Enter your complete delivery address..."
+                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 resize-none"
+                value={address}
+                onChange={e => setAddress(e.target.value)}
+              />
+            </div>
 
-          {/* Order Summary sidebar */}
-          <div className="lg:col-span-2">
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 sticky top-24">
-              <h3 className="font-black text-gray-900 mb-4">Order Summary</h3>
-              <div className="space-y-2 text-sm text-gray-600">
-                <div className="flex justify-between"><span>Subtotal</span><span className="font-semibold text-gray-900">${subtotal.toFixed(2)}</span></div>
-                <div className="flex justify-between"><span>Delivery</span><span className="font-semibold text-gray-900">${deliveryFee.toFixed(2)}</span></div>
-                <div className="flex justify-between"><span>Taxes</span><span className="font-semibold text-gray-900">${taxes.toFixed(2)}</span></div>
-                <div className="border-t border-gray-100 pt-2 flex justify-between font-black text-gray-900 text-base">
-                  <span>Total</span>
-                  <span className="text-orange-500 text-lg">${total.toFixed(2)}</span>
+            {/* Order Summary */}
+            <div className="bg-orange-50 rounded-xl p-4 mb-6">
+              <h3 className="font-bold text-gray-800 mb-3">Order Summary — {restaurantName}</h3>
+              {cart.map(item => (
+                <div key={item._id} className="flex justify-between text-sm mb-1">
+                  <span className="text-gray-600">{item.name} × {item.quantity}</span>
+                  <span className="font-semibold">₹{item.price * item.quantity}</span>
                 </div>
-              </div>
-              <div className="mt-4 text-xs text-gray-400 text-center">
-                Estimated delivery: ~35 minutes
+              ))}
+              <div className="border-t border-orange-200 mt-3 pt-3 flex justify-between font-black text-gray-900">
+                <span>Total</span>
+                <span className="text-orange-500">₹{total}</span>
               </div>
             </div>
+
+            <button
+              onClick={handlePlaceOrder}
+              disabled={loading}
+              className="w-full bg-gradient-to-r from-orange-500 to-red-500 text-white font-bold py-3 rounded-xl disabled:opacity-50"
+            >
+              {loading ? 'Placing Order...' : 'Proceed to Payment →'}
+            </button>
           </div>
-        </div>
+        )}
+
+        {/* Step 2 — Payment */}
+        {step === 2 && (
+          <div className="bg-white rounded-2xl shadow-sm p-6 border border-gray-100">
+            <h2 className="text-xl font-black text-gray-900 mb-6">💳 Payment</h2>
+
+            {error && <div className="bg-red-50 text-red-600 p-3 rounded-xl mb-4 text-sm">⚠️ {error}</div>}
+
+            <div className="bg-gray-50 rounded-xl p-4 mb-6">
+              <div className="flex justify-between mb-2">
+                <span className="text-gray-500 text-sm">Order ID</span>
+                <span className="text-xs font-mono text-gray-600">{order?._id?.slice(-8)}</span>
+              </div>
+              <div className="flex justify-between mb-2">
+                <span className="text-gray-500 text-sm">Delivery to</span>
+                <span className="text-sm font-semibold text-gray-700 text-right max-w-[60%]">{address}</span>
+              </div>
+              <div className="flex justify-between font-black text-lg mt-3 pt-3 border-t border-gray-200">
+                <span>Amount to Pay</span>
+                <span className="text-orange-500">₹{total}</span>
+              </div>
+            </div>
+
+            {/* Payment methods */}
+            <div className="space-y-3 mb-6">
+              {['💳 Credit / Debit Card', '📱 UPI / QR Code', '💰 Cash on Delivery'].map((method, i) => (
+                <div key={i} className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${i === 0 ? 'border-orange-500 bg-orange-50' : 'border-gray-200'}`}>
+                  <span className="text-lg">{method.split(' ')[0]}</span>
+                  <span className="text-sm font-semibold text-gray-700">{method.split(' ').slice(1).join(' ')}</span>
+                  {i === 0 && <span className="ml-auto text-orange-500 text-xs font-bold">Selected</span>}
+                </div>
+              ))}
+            </div>
+
+            <button
+              onClick={handlePayment}
+              disabled={paymentLoading}
+              className="w-full bg-gradient-to-r from-green-500 to-emerald-500 text-white font-bold py-3 rounded-xl disabled:opacity-50"
+            >
+              {paymentLoading ? 'Processing...' : `Pay ₹${total} Now`}
+            </button>
+          </div>
+        )}
+
+        {/* Step 3 — Success */}
+        {step === 3 && (
+          <div className="bg-white rounded-2xl shadow-sm p-8 border border-gray-100 text-center">
+            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <span className="text-4xl">✅</span>
+            </div>
+            <h2 className="text-2xl font-black text-gray-900 mb-2">Order Placed!</h2>
+            <p className="text-gray-500 mb-6">Your order has been placed successfully. Track it in real-time!</p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => navigate(createPageUrl('OrderTracking'))}
+                className="flex-1 bg-orange-500 text-white font-bold py-3 rounded-xl"
+              >
+                Track Order 📍
+              </button>
+              <button
+                onClick={() => navigate(createPageUrl('Home'))}
+                className="flex-1 border border-gray-200 text-gray-700 font-bold py-3 rounded-xl"
+              >
+                Back to Home
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
