@@ -1,250 +1,265 @@
-import { useState, useEffect } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { api } from '@/api/client';
-import { createPageUrl } from '@/utils';
-import { Star, Clock, MapPin, ShoppingCart, Plus, Minus } from 'lucide-react';
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { createPageUrl } from "@/utils";
+import { Star, Clock, Bike, MapPin, Phone, Heart, Share2, Plus, Minus, ChevronRight, Info } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import ReviewCard from "../components/restaurant/ReviewCard";
+import MenuSection from "../components/restaurant/MenuSection";
+import { api } from "@/api/client";
 
 export default function RestaurantDetail() {
-  const location = useLocation();
-  const navigate = useNavigate();
-  const params = new URLSearchParams(location.search);
-  const restaurantId = params.get('id');
+    const navigate = useNavigate();
+    const urlParams = new URLSearchParams(window.location.search);
+    const restaurantId = urlParams.get("id");
 
-  const [restaurant, setRestaurant] = useState(null);
-  const [menuItems, setMenuItems] = useState([]);
-  const [reviews, setReviews] = useState([]);
-  const [cart, setCart] = useState({});
-  const [loading, setLoading] = useState(true);
-  const [activeCategory, setActiveCategory] = useState('All');
-  const [cartError, setCartError] = useState('');
+    const [restaurant, setRestaurant] = useState(null);
+    const [menuItems, setMenuItems] = useState([]);
+    const [reviews, setReviews] = useState([]);
+    const [cart, setCart] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [activeTab, setActiveTab] = useState("menu");
+    const [isWishlisted, setIsWishlisted] = useState(false);
+    const [newReview, setNewReview] = useState({ rating: 5, comment: "" });
+    const [user, setUser] = useState(null);
 
-  useEffect(() => {
-    if (restaurantId) loadData();
-  }, [restaurantId]);
+    useEffect(() => {
+        if (!restaurantId) return;
+        const savedCart = JSON.parse(localStorage.getItem("foodhub_cart") || "[]");
+        setCart(savedCart);
+        api.auth.me().then(setUser).catch(() => { });
+        Promise.all([
+            api.restaurants.filter({ id: restaurantId }).catch(() => []),
+            api.menuItems.filter({ restaurant_id: restaurantId }).catch(() => []),
+            api.reviews.filter({ restaurant_id: restaurantId }).catch(() => []),
+        ]).then(([rests, items, revs]) => {
+            setRestaurant(rests[0] || null);
+            setMenuItems(items);
+            setReviews(revs);
+            setLoading(false);
+        });
+    }, [restaurantId]);
 
-  const loadData = async () => {
-    try {
-      const [r, m, rev] = await Promise.all([
-        api.restaurants.getById(restaurantId),
-        api.menuItems.filter({ restaurant: restaurantId }),
-        api.reviews.filter({ restaurant_id: restaurantId })
-      ]);
-      setRestaurant(r);
-      setMenuItems(Array.isArray(m) ? m : []);
-      setReviews(Array.isArray(rev) ? rev : []);
+    const getItemQty = (itemId) => {
+        const found = cart.find(c => (c._id || c.id) === itemId);
+        return found ? found.quantity : 0;
+    };
 
-      const savedCart = JSON.parse(localStorage.getItem('foodhub_cart') || '[]');
-      const savedRestaurantId = localStorage.getItem('foodhub_restaurant_id');
-      if (savedRestaurantId === restaurantId) {
-        const cartObj = {};
-        savedCart.forEach(item => { cartObj[item._id] = item.quantity; });
-        setCart(cartObj);
-      }
-    } catch (err) {
-      console.error(err);
-    }
-    setLoading(false);
-  };
+    const updateCart = (item, delta) => {
+        let updatedCart = [...cart];
+        const itemId = item._id || item.id;
+        
+        // Prevent cross-restaurant ordering
+        if (delta > 0 && updatedCart.length > 0 && updatedCart[0].restaurant_id !== restaurantId) {
+            const confirmClear = window.confirm("Your cart contains items from another restaurant. Would you like to clear it and add this item instead?");
+            if (confirmClear) {
+                updatedCart = [];
+            } else {
+                return;
+            }
+        }
 
-  const categories = ['All', ...new Set(menuItems.map(item => item.category))];
+        const idx = updatedCart.findIndex(c => (c._id || c.id) === itemId);
+        if (idx >= 0) {
+            updatedCart[idx].quantity += delta;
+            if (updatedCart[idx].quantity <= 0) updatedCart.splice(idx, 1);
+        } else if (delta > 0) {
+            updatedCart.push({ ...item, id: itemId, quantity: 1, restaurant_id: restaurantId, restaurant_name: restaurant?.name });
+        }
+        setCart(updatedCart);
+        localStorage.setItem("foodhub_cart", JSON.stringify(updatedCart));
+        window.dispatchEvent(new Event("cartUpdated"));
+    };
 
-  const filteredItems = activeCategory === 'All'
-    ? menuItems
-    : menuItems.filter(item => item.category === activeCategory);
+    const cartTotal = cart.reduce((sum, i) => sum + i.price * i.quantity, 0);
+    const cartCount = cart.reduce((sum, i) => sum + i.quantity, 0);
 
-  const addToCart = (item) => {
-    const savedRestaurantId = localStorage.getItem('foodhub_restaurant_id');
-    if (savedRestaurantId && savedRestaurantId !== restaurantId) {
-      setCartError('Clear your cart first! You can only order from one restaurant at a time.');
-      setTimeout(() => setCartError(''), 3000);
-      return;
-    }
+    const submitReview = async () => {
+        if (!user) { api.auth.redirectToLogin(); return; }
+        await api.reviews.create({
+            restaurant_id: restaurantId,
+            user_email: user.email,
+            user_name: user.full_name || user.email,
+            rating: newReview.rating,
+            comment: newReview.comment,
+        });
+        const revs = await api.reviews.filter({ restaurant_id: restaurantId });
+        setReviews(revs);
+        setNewReview({ rating: 5, comment: "" });
+    };
 
-    const newCart = { ...cart, [item._id]: (cart[item._id] || 0) + 1 };
-    setCart(newCart);
-    saveCart(newCart, item);
-  };
+    const grouped = menuItems.reduce((acc, item) => {
+        const cat = item.category || "Uncategorized";
+        if (!acc[cat]) acc[cat] = [];
+        acc[cat].push(item);
+        return acc;
+    }, {});
 
-  const removeFromCart = (item) => {
-    const newCart = { ...cart };
-    if (newCart[item._id] > 1) {
-      newCart[item._id]--;
-    } else {
-      delete newCart[item._id];
-    }
-    setCart(newCart);
-    saveCart(newCart, item);
-  };
-
-  const saveCart = (cartObj, item) => {
-    const items = menuItems
-      .filter(m => cartObj[m._id])
-      .map(m => ({ ...m, quantity: cartObj[m._id] }));
-
-    localStorage.setItem('foodhub_cart', JSON.stringify(items));
-    localStorage.setItem('foodhub_restaurant_id', restaurantId);
-    localStorage.setItem('foodhub_restaurant_name', restaurant?.name || '');
-    window.dispatchEvent(new Event('cartUpdated'));
-  };
-
-  const totalItems = Object.values(cart).reduce((sum, q) => sum + q, 0);
-  const totalPrice = menuItems
-    .filter(m => cart[m._id])
-    .reduce((sum, m) => sum + m.price * cart[m._id], 0);
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
-      </div>
+    if (loading) return (
+        <div className="min-h-screen flex items-center justify-center">
+            <div className="animate-spin w-10 h-10 border-4 border-orange-500 border-t-transparent rounded-full" />
+        </div>
     );
-  }
-
-  if (!restaurant) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-6xl mb-4">🍽️</div>
-          <h2 className="text-2xl font-bold text-gray-700">Restaurant not found</h2>
-          <button onClick={() => navigate(createPageUrl('Home'))} className="mt-4 bg-orange-500 text-white px-6 py-2 rounded-xl font-bold">Go Home</button>
-        </div>
-      </div>
+    if (!restaurant) return (
+        <div className="min-h-screen flex items-center justify-center text-gray-500">Restaurant not found.</div>
     );
-  }
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-
-      {/* Hero */}
-      <div className="relative h-56 bg-gradient-to-br from-orange-400 to-red-500">
-        {restaurant.image && (
-          <img src={restaurant.image} alt={restaurant.name} className="w-full h-full object-cover" />
-        )}
-        <div className="absolute inset-0 bg-black/40" />
-        <div className="absolute bottom-4 left-4 text-white">
-          <h1 className="text-3xl font-black">{restaurant.name}</h1>
-          <p className="text-white/80 text-sm">{Array.isArray(restaurant.cuisine) ? restaurant.cuisine.join(', ') : restaurant.cuisine}</p>
-          <div className="flex items-center gap-3 mt-2 text-sm">
-            <span className="flex items-center gap-1"><Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />{restaurant.rating?.toFixed(1) || 'New'}</span>
-            <span className="flex items-center gap-1"><Clock className="w-4 h-4" />{restaurant.delivery_time || 30} min</span>
-            <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${restaurant.isOpen ? 'bg-green-500' : 'bg-red-500'}`}>
-              {restaurant.isOpen ? 'Open' : 'Closed'}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      <div className="max-w-4xl mx-auto px-4 py-6">
-
-        {cartError && (
-          <div className="bg-red-50 border border-red-200 text-red-600 p-3 rounded-xl mb-4 text-sm">⚠️ {cartError}</div>
-        )}
-
-        {/* Category tabs */}
-        <div className="flex gap-2 overflow-x-auto scrollbar-hide mb-6 pb-1">
-          {categories.map(cat => (
-            <button
-              key={cat}
-              onClick={() => setActiveCategory(cat)}
-              className={`px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition-all ${activeCategory === cat ? 'bg-orange-500 text-white' : 'bg-white text-gray-600 border border-gray-200'}`}
-            >
-              {cat}
-            </button>
-          ))}
-        </div>
-
-        {/* Menu items */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-24">
-          {filteredItems.length === 0 ? (
-            <div className="col-span-2 text-center py-12">
-              <div className="text-5xl mb-3">🍽️</div>
-              <p className="text-gray-500">No items in this category</p>
-            </div>
-          ) : filteredItems.map(item => (
-            <div key={item._id} className={`bg-white rounded-2xl shadow-sm p-4 border border-gray-100 flex gap-4 ${!item.isAvailable ? 'opacity-60' : ''}`}>
-              <div className="w-20 h-20 rounded-xl overflow-hidden bg-gradient-to-br from-orange-100 to-red-100 flex-shrink-0">
-                {item.image ? (
-                  <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+    return (
+        <div className="min-h-screen bg-gray-50 pb-28">
+            {/* Hero */}
+            <div className="relative h-64 md:h-80 bg-gradient-to-br from-orange-100 to-red-100 overflow-hidden">
+                {restaurant.image ? (
+                    <img src={restaurant.image} alt={restaurant.name} className="w-full h-full object-cover" />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-3xl">🍽️</div>
+                    <div className="w-full h-full flex items-center justify-center text-8xl">🍽️</div>
                 )}
-              </div>
-              <div className="flex-1">
-                <h3 className="font-bold text-gray-900 text-sm">{item.name}</h3>
-                <p className="text-xs text-gray-400 mt-0.5 line-clamp-2">{item.description}</p>
-                <div className="flex items-center justify-between mt-2">
-                  <span className="font-black text-orange-500">₹{item.price}</span>
-                  {item.isAvailable ? (
-                    cart[item._id] ? (
-                      <div className="flex items-center gap-2">
-                        <button onClick={() => removeFromCart(item)} className="w-7 h-7 bg-orange-100 text-orange-500 rounded-lg flex items-center justify-center font-bold">
-                          <Minus className="w-3 h-3" />
-                        </button>
-                        <span className="font-bold text-sm w-4 text-center">{cart[item._id]}</span>
-                        <button onClick={() => addToCart(item)} className="w-7 h-7 bg-orange-500 text-white rounded-lg flex items-center justify-center font-bold">
-                          <Plus className="w-3 h-3" />
-                        </button>
-                      </div>
-                    ) : (
-                      <button onClick={() => addToCart(item)} className="bg-orange-500 text-white text-xs font-bold px-3 py-1.5 rounded-xl flex items-center gap-1">
-                        <Plus className="w-3 h-3" /> Add
-                      </button>
-                    )
-                  ) : (
-                    <span className="text-xs text-red-500 font-bold">Unavailable</span>
-                  )}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Reviews */}
-        {reviews.length > 0 && (
-          <div className="mb-6">
-            <h3 className="text-xl font-black text-gray-900 mb-4">Customer Reviews</h3>
-            <div className="space-y-3">
-              {reviews.slice(0, 5).map(review => (
-                <div key={review._id} className="bg-white rounded-xl p-4 border border-gray-100">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-bold text-sm text-gray-800">{review.user?.name || 'Customer'}</span>
-                    <div className="flex gap-0.5">
-                      {[...Array(5)].map((_, i) => (
-                        <span key={i} className={`text-sm ${i < review.rating ? 'text-yellow-400' : 'text-gray-200'}`}>★</span>
-                      ))}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+                <div className="absolute bottom-6 left-6 right-6">
+                    <div className="flex items-end justify-between">
+                        <div>
+                            <h1 className="text-3xl font-black text-white">{restaurant.name}</h1>
+                            <p className="text-white/80 mt-1">{restaurant.cuisine}</p>
+                        </div>
+                        <div className="flex gap-2">
+                            <button
+                                onClick={() => setIsWishlisted(!isWishlisted)}
+                                className={`p-2.5 rounded-full backdrop-blur-sm transition-all ${isWishlisted ? "bg-red-500 text-white" : "bg-white/20 text-white"}`}
+                            >
+                                <Heart className={`w-5 h-5 ${isWishlisted ? "fill-white" : ""}`} />
+                            </button>
+                            <button className="p-2.5 rounded-full bg-white/20 backdrop-blur-sm text-white">
+                                <Share2 className="w-5 h-5" />
+                            </button>
+                        </div>
                     </div>
-                  </div>
-                  <p className="text-sm text-gray-600">{review.reviewText}</p>
-                  {review.rewardPoints > 0 && (
-                    <span className="text-xs text-purple-500 font-bold mt-1 block">+{review.rewardPoints} points earned</span>
-                  )}
                 </div>
-              ))}
             </div>
-          </div>
-        )}
-      </div>
 
-      {/* Floating cart */}
-      {totalItems > 0 && (
-        <div className="fixed bottom-6 left-4 right-4 max-w-lg mx-auto">
-          <button
-            onClick={() => navigate(createPageUrl('Cart'))}
-            className="w-full bg-gradient-to-r from-orange-500 to-red-500 text-white p-4 rounded-2xl shadow-2xl flex items-center justify-between"
-          >
-            <div className="flex items-center gap-3">
-              <div className="bg-white/20 w-8 h-8 rounded-lg flex items-center justify-center font-black text-sm">
-                {totalItems}
-              </div>
-              <span className="font-bold">{totalItems} item{totalItems > 1 ? 's' : ''} in cart</span>
+            {/* Info Bar */}
+            <div className="bg-white border-b border-gray-100 shadow-sm">
+                <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4">
+                    <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
+                        <div className="flex items-center gap-1.5">
+                            <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+                            <span className="font-bold">{restaurant.rating?.toFixed(1)}</span>
+                            <span className="text-gray-400">({reviews.length} reviews)</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-gray-600">
+                            <Clock className="w-4 h-4 text-orange-400" />
+                            <span>{restaurant.delivery_time || 30} min delivery</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-gray-600">
+                            <Bike className="w-4 h-4 text-orange-400" />
+                            <span>{restaurant.delivery_fee === 0 ? "Free delivery" : `$${restaurant.delivery_fee} delivery`}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-gray-600">
+                            <MapPin className="w-4 h-4 text-orange-400" />
+                            <span>{restaurant.address || restaurant.city}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-gray-500">
+                            <span className={`w-2 h-2 rounded-full ${restaurant.is_open ? "bg-green-500" : "bg-gray-400"}`} />
+                            <span className="font-medium">{restaurant.is_open ? "Open" : "Closed"} · {restaurant.opening_hours}</span>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="font-black">₹{totalPrice}</span>
-              <ShoppingCart className="w-5 h-5" />
+
+            {/* Tabs */}
+            <div className="bg-white sticky top-16 z-30 border-b border-gray-100">
+                <div className="max-w-5xl mx-auto px-4 sm:px-6">
+                    <div className="flex gap-1">
+                        {["menu", "reviews", "info"].map(tab => (
+                            <button
+                                key={tab}
+                                onClick={() => setActiveTab(tab)}
+                                className={`px-5 py-3.5 text-sm font-bold capitalize transition-colors border-b-2 ${activeTab === tab ? "border-orange-500 text-orange-500" : "border-transparent text-gray-500 hover:text-gray-800"
+                                    }`}
+                            >
+                                {tab} {tab === "reviews" && `(${reviews.length})`}
+                            </button>
+                        ))}
+                    </div>
+                </div>
             </div>
-          </button>
+
+            <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6">
+                {activeTab === "menu" && (
+                    <div className="space-y-8">
+                        {Object.entries(grouped).map(([category, items]) => (
+                            <MenuSection key={category} category={category} items={items} getItemQty={getItemQty} updateCart={updateCart} />
+                        ))}
+                        {menuItems.length === 0 && (
+                            <div className="text-center py-20 text-gray-400">
+                                <div className="text-5xl mb-3">📋</div>
+                                <p className="font-semibold">Menu not available yet</p>
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {activeTab === "reviews" && (
+                    <div className="space-y-6">
+                        {/* Add Review */}
+                        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                            <h3 className="font-bold text-gray-900 mb-4">Write a Review</h3>
+                            <div className="flex gap-2 mb-4">
+                                {[1, 2, 3, 4, 5].map(s => (
+                                    <button key={s} onClick={() => setNewReview(r => ({ ...r, rating: s }))}
+                                        className={`text-2xl transition-transform hover:scale-110 ${s <= newReview.rating ? "opacity-100" : "opacity-30"}`}>⭐</button>
+                                ))}
+                            </div>
+                            <textarea
+                                placeholder="Share your experience..."
+                                value={newReview.comment}
+                                onChange={e => setNewReview(r => ({ ...r, comment: e.target.value }))}
+                                className="w-full border border-gray-200 rounded-xl p-3 text-sm resize-none h-24 outline-none focus:border-orange-400"
+                            />
+                            <Button onClick={submitReview} className="mt-3 bg-orange-500 hover:bg-orange-600 text-white rounded-xl">
+                                Submit Review
+                            </Button>
+                        </div>
+
+                        {reviews.length === 0 ? (
+                            <div className="text-center py-16 text-gray-400">
+                                <div className="text-5xl mb-3">💬</div>
+                                <p className="font-semibold">No reviews yet. Be the first!</p>
+                            </div>
+                        ) : (
+                            reviews.map(review => <ReviewCard key={review.id} review={review} />)
+                        )}
+                    </div>
+                )}
+
+                {activeTab === "info" && (
+                    <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 space-y-4">
+                        <h3 className="font-bold text-gray-900 text-lg">About {restaurant.name}</h3>
+                        <p className="text-gray-600 text-sm leading-relaxed">{restaurant.description || "No description available."}</p>
+                        <div className="grid grid-cols-2 gap-4 pt-2 text-sm">
+                            <div className="flex items-center gap-2 text-gray-600"><Clock className="w-4 h-4 text-orange-400" />{restaurant.opening_hours || "9am - 10pm"}</div>
+                            <div className="flex items-center gap-2 text-gray-600"><Phone className="w-4 h-4 text-orange-400" />{restaurant.phone || "Not listed"}</div>
+                            <div className="flex items-center gap-2 text-gray-600"><MapPin className="w-4 h-4 text-orange-400" />{restaurant.address || restaurant.city}</div>
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {/* Floating Cart */}
+            {cartCount > 0 && (
+                <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-full max-w-sm px-4">
+                    <button
+                        onClick={() => navigate(createPageUrl("Cart"))}
+                        className="w-full bg-gradient-to-r from-orange-500 to-red-500 text-white py-4 px-6 rounded-2xl shadow-2xl shadow-orange-300 flex items-center justify-between hover:from-orange-600 hover:to-red-600 transition-all"
+                    >
+                        <div className="flex items-center gap-3">
+                            <span className="bg-white/25 rounded-lg px-2 py-0.5 font-black text-sm">{cartCount}</span>
+                            <span className="font-bold">View Cart</span>
+                        </div>
+                        <div className="flex items-center gap-1 font-black">
+                            ${cartTotal.toFixed(2)} <ChevronRight className="w-5 h-5" />
+                        </div>
+                    </button>
+                </div>
+            )}
         </div>
-      )}
-    </div>
-  );
+    );
 }
