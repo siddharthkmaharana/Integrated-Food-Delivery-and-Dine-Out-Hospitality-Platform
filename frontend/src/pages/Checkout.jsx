@@ -37,25 +37,24 @@ export default function Checkout() {
     if (!form.address || !form.city) { alert("Please fill delivery address."); return; }
     setLoading(true);
     const order = await api.orders.create({
-      user_email: user.email,
-      user_name: user.full_name || user.email,
-      restaurant_id: cart[0].restaurant_id,
-      restaurant_name: cart[0].restaurant_name,
-      items: cart.map(i => ({ id: i.id, name: i.name, price: i.price, quantity: i.quantity })),
-      subtotal,
-      delivery_fee: deliveryFee,
-      discount: 0,
-      total,
-      status: "placed",
-      delivery_address: `${form.address}, ${form.city} ${form.pincode}`,
-      delivery_instructions: form.instructions,
-      payment_method: form.payment,
-      payment_status: form.payment === "cash" ? "pending" : "paid",
-      estimated_time: 35,
+      restaurantId: cart[0].restaurant_id,
+      items: cart.map(i => ({ menuItemId: i.id, quantity: i.quantity })),
+      deliveryAddress: `${form.address}, ${form.city} ${form.pincode}`,
     });
+
+    if (form.payment !== 'cash') {
+      try {
+        await api.orders.pay(order._id || order.id);
+      } catch (err) {
+        alert("Payment failed or was declined.");
+        setLoading(false);
+        return;
+      }
+    }
+
     localStorage.removeItem("foodhub_cart");
     window.dispatchEvent(new Event("cartUpdated"));
-    navigate(`${createPageUrl("OrderTracking")}?id=${order.id}`);
+    navigate(`${createPageUrl("OrderTracking")}?id=${order._id || order.id}`);
   };
 
   const STEPS = ["Delivery", "Payment", "Review"];

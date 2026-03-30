@@ -26,13 +26,22 @@ const createOrder = async (req, res) => {
       });
     }
 
+    const subtotal = orderItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+    const deliveryFee = restaurant.delivery_fee || 2.99;
+    const tax = subtotal * 0.08;
+    totalAmount = subtotal + deliveryFee + tax;
+
     const order = await Order.create({
       customer: req.user._id,
       restaurant: restaurantId,
+      restaurantName: restaurant.name,
       items: orderItems,
+      subtotal,
+      deliveryFee,
+      tax,
       totalAmount,
       deliveryAddress,
-      status: 'PLACED',
+      status: 'PENDING',
       paymentStatus: 'PENDING'
     });
 

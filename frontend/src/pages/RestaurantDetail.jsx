@@ -12,6 +12,7 @@ export default function RestaurantDetail() {
     const navigate = useNavigate();
     const urlParams = new URLSearchParams(window.location.search);
     const restaurantId = urlParams.get("id");
+    const orderId = urlParams.get("order_id");
 
     const [restaurant, setRestaurant] = useState(null);
     const [menuItems, setMenuItems] = useState([]);
@@ -22,6 +23,7 @@ export default function RestaurantDetail() {
     const [isWishlisted, setIsWishlisted] = useState(false);
     const [newReview, setNewReview] = useState({ rating: 5, comment: "" });
     const [user, setUser] = useState(null);
+    const [suggestions, setSuggestions] = useState(null);
 
     useEffect(() => {
         if (!restaurantId) return;
@@ -32,10 +34,12 @@ export default function RestaurantDetail() {
             api.restaurants.filter({ id: restaurantId }).catch(() => []),
             api.menuItems.filter({ restaurant_id: restaurantId }).catch(() => []),
             api.reviews.filter({ restaurant_id: restaurantId }).catch(() => []),
-        ]).then(([rests, items, revs]) => {
+            orderId ? api.reviews.getSuggestions(orderId).catch(() => null) : Promise.resolve(null)
+        ]).then(([rests, items, revs, suggs]) => {
             setRestaurant(rests[0] || null);
             setMenuItems(items);
             setReviews(revs);
+            if (suggs) setSuggestions(suggs);
             setLoading(false);
         });
     }, [restaurantId]);
@@ -77,11 +81,10 @@ export default function RestaurantDetail() {
     const submitReview = async () => {
         if (!user) { api.auth.redirectToLogin(); return; }
         await api.reviews.create({
-            restaurant_id: restaurantId,
-            user_email: user.email,
-            user_name: user.full_name || user.email,
+            restaurant: restaurantId,
+            order: orderId,
             rating: newReview.rating,
-            comment: newReview.comment,
+            reviewText: newReview.comment,
         });
         const revs = await api.reviews.filter({ restaurant_id: restaurantId });
         setReviews(revs);
@@ -208,6 +211,22 @@ export default function RestaurantDetail() {
                                         className={`text-2xl transition-transform hover:scale-110 ${s <= newReview.rating ? "opacity-100" : "opacity-30"}`}>⭐</button>
                                 ))}
                             </div>
+                            
+                            {suggestions && (
+                                <div className="mb-4">
+                                    <p className="text-xs text-orange-600 font-bold mb-2 flex items-center gap-1">✨ AI Suggestions</p>
+                                    <div className="flex flex-wrap gap-2">
+                                        {suggestions.suggestions.map((s, i) => (
+                                            <button key={i} onClick={() => setNewReview(r => ({ ...r, comment: r.comment + (r.comment ? " " : "") + s }))} 
+                                                className="text-xs bg-orange-50 hover:bg-orange-100 text-orange-700 font-medium px-2.5 py-1.5 rounded-lg border border-orange-200 transition-colors">
+                                                +{s}
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <p className="text-[10px] text-gray-400 mt-1.5">{suggestions.tip}</p>
+                                </div>
+                            )}
+
                             <textarea
                                 placeholder="Share your experience..."
                                 value={newReview.comment}

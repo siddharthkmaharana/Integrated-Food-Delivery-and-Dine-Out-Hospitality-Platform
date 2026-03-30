@@ -150,7 +150,6 @@ export const api = {
       const { data } = await apiClient.put(`/orders/${id}`, payload);
       return data;
     },
-
     subscribe: (cb) => {
       const socket = io("http://localhost:5000");
       socket.on("order_update", cb);
@@ -174,7 +173,7 @@ export const api = {
     create: async (payload) => {
       const { data } = await apiClient.post("/reviews", payload);
       return data;
-    },
+    }
   },
 
   reservations: {

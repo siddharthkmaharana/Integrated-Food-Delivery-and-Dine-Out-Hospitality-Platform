@@ -8,11 +8,15 @@ const orderSchema = new mongoose.Schema({
             name:String, price:Number,quantity:{type:Number,default:1}
         }
     ],
+    restaurantName: String,
+    subtotal: Number,
+    deliveryFee: Number,
+    tax: Number,
     totalAmount:{type:Number, required:true},
     status:{
         type:String,
-        enum:['PLACED','ACCEPTED','ORDER_PREPARING','COURIER_ASSIGNED','IN_TRANSIT','DELIVERED','CANCELLED'],
-        default:'PLACED '
+        enum:['PENDING','PLACED','ACCEPTED','PREPARING','COURIER_ASSIGNED','DELIVERING','DELIVERED','CANCELLED'],
+        default:'PENDING'
     },
     paymentStatus:{type:String,enum: ['PENDING','PAID','FAILED'], default:'PENDING'},
     deliveryAddress:{type:String ,required:true},
