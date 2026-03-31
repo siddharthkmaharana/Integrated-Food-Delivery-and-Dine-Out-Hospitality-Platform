@@ -153,7 +153,7 @@ export default function RestaurantDetail() {
                         </div>
                         <div className="flex items-center gap-1.5 text-gray-600">
                             <Bike className="w-4 h-4 text-orange-400" />
-                            <span>{restaurant.delivery_fee === 0 ? "Free delivery" : `$${restaurant.delivery_fee} delivery`}</span>
+                            <span>{restaurant.delivery_fee === 0 ? "Free delivery" : `₹${restaurant.delivery_fee} delivery`}</span>
                         </div>
                         <div className="flex items-center gap-1.5 text-gray-600">
                             <MapPin className="w-4 h-4 text-orange-400" />

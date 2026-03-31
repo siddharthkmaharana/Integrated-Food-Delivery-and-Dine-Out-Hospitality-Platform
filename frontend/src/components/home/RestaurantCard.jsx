@@ -44,7 +44,7 @@ export default function RestaurantCard({ restaurant }) {
             </span>
           </div>
 
-          {restaurant.delivery_fee === 0 && (
+          {restaurant.delivery_fee <= 0 && (
             <div className="absolute top-3 right-3 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full">
               FREE Delivery
             </div>
@@ -67,7 +67,7 @@ export default function RestaurantCard({ restaurant }) {
             <span className="text-gray-200">·</span>
             <div className="flex items-center gap-1">
               <Bike className="w-3.5 h-3.5 text-gray-400" />
-              <span>Free</span>
+              <span>{restaurant.delivery_fee > 0 ? `₹${restaurant.delivery_fee}` : "Free"}</span>
             </div>
             <span className="text-gray-200">·</span>
             {/* Changed $ to ₹ */}
