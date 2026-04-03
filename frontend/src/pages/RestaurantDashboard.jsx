@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import {
     LayoutDashboard, UtensilsCrossed, Package, Calendar,
-    Plus, Trash2, Edit3, Check, X, TrendingUp, RefreshCw, Save
+    Plus, Trash2, Edit3, Check, X, TrendingUp, RefreshCw, Save,
+    Star
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,6 +26,7 @@ export default function RestaurantDashboard() {
     const [menuItems, setMenuItems] = useState([]);
     const [orders, setOrders] = useState([]);
     const [reservations, setReservations] = useState([]);
+    const [reviews, setReviews] = useState([]);
     const [loading, setLoading] = useState(true);
     const [editItem, setEditItem] = useState(null);
     const [showAddItem, setShowAddItem] = useState(false);
@@ -43,14 +45,16 @@ export default function RestaurantDashboard() {
             const r = myRest || (await base44.entities.Restaurant.list("-created_date", 1))[0];
             if (!r) { setLoading(false); return; }
             setRestaurant(r);
-            const [items, ords, res] = await Promise.all([
+            const [items, ords, res, revs] = await Promise.all([
                 base44.entities.MenuItem.filter({ restaurant_id: r.id }),
                 base44.entities.Order.filter({ restaurant_id: r.id }, "-created_date", 50),
                 base44.entities.Reservation.filter({ restaurant_id: r.id }, "-created_date", 50),
+                base44.entities.Review.filter({ restaurantId: r.id }, "-createdAt", 50).catch(() => []), 
             ]);
             setMenuItems(items);
             setOrders(ords);
             setReservations(res);
+            setReviews(revs);
             setLoading(false);
         }).catch(() => base44.auth.redirectToLogin());
     }, []);
@@ -92,6 +96,7 @@ export default function RestaurantDashboard() {
         { id: "menu", label: "Menu", icon: UtensilsCrossed },
         { id: "orders", label: "Orders", icon: Package },
         { id: "reservations", label: "Reservations", icon: Calendar },
+        { id: "reviews", label: "Reviews", icon: Star },
     ];
 
     if (loading) return <div className="min-h-screen flex items-center justify-center"><div className="animate-spin w-10 h-10 border-4 border-orange-500 border-t-transparent rounded-full" /></div>;
@@ -149,7 +154,7 @@ export default function RestaurantDashboard() {
                         <h1 className="text-2xl font-black text-gray-900 mb-6">Restaurant Dashboard</h1>
                         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                             {[
-                                { label: "Total Revenue", value: `$${totalRevenue.toFixed(0)}`, icon: TrendingUp, color: "bg-green-50 text-green-600" },
+                                { label: "Total Revenue", value: `₹${totalRevenue.toFixed(0)}`, icon: TrendingUp, color: "bg-green-50 text-green-600" },
                                 { label: "Total Orders", value: orders.length, icon: Package, color: "bg-blue-50 text-blue-600" },
                                 { label: "Active Orders", value: activeOrders.length, icon: Package, color: "bg-orange-50 text-orange-600" },
                                 { label: "Menu Items", value: menuItems.length, icon: UtensilsCrossed, color: "bg-purple-50 text-purple-600" },
@@ -240,7 +245,7 @@ export default function RestaurantDashboard() {
                                                 {item.is_bestseller && <span className="text-xs">🔥</span>}
                                             </div>
                                             <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
-                                                <span className="font-bold text-orange-500">${item.price?.toFixed(2)}</span>
+                                                <span className="font-bold text-orange-500">₹{item.price?.toFixed(2)}</span>
                                                 {item.category && <span>{item.category}</span>}
                                                 <span className={item.is_available ? "text-green-600" : "text-gray-400"}>{item.is_available ? "Available" : "Unavailable"}</span>
                                             </div>
@@ -276,7 +281,7 @@ export default function RestaurantDashboard() {
                                             <p className="font-bold text-gray-900">{o.user_name}</p>
                                             <p className="text-xs text-gray-400">{o.created_date ? format(new Date(o.created_date), "MMM d, h:mm a") : ""}</p>
                                         </div>
-                                        <span className="font-black text-gray-900">${o.total?.toFixed(2)}</span>
+                                        <span className="font-black text-gray-900">₹{o.total?.toFixed(2)}</span>
                                     </div>
                                     <p className="text-xs text-gray-500 mb-3">{o.items?.map(i => `${i.name} ×${i.quantity}`).join(", ")}</p>
                                     <div className="flex items-center gap-2 flex-wrap">
@@ -328,6 +333,38 @@ export default function RestaurantDashboard() {
                                     </div>
                                 </div>
                             ))}
+                        </div>
+                    </div>
+                )}
+
+                {tab === "reviews" && (
+                    <div>
+                        <h1 className="text-2xl font-black text-gray-900 mb-6">Customer Reviews ({reviews.length})</h1>
+                        <div className="space-y-4">
+                            {reviews.length === 0 ? (
+                                <div className="text-center py-12 bg-white rounded-2xl border border-gray-100 shadow-sm">
+                                    <Star className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                                    <h3 className="text-lg font-bold text-gray-900">No reviews yet.</h3>
+                                    <p className="text-gray-500 text-sm mt-1">When customers review your restaurant, they will appear here.</p>
+                                </div>
+                            ) : (
+                                reviews.map(review => (
+                                    <div key={review.id} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <div className="flex items-center gap-2">
+                                                <p className="font-bold text-gray-900">{review.user_name || review.user?.name || "Anonymous"}</p>
+                                                <span className="text-xs text-gray-400">• {review.createdAt ? format(new Date(review.createdAt), "MMM d, yyyy") : ""}</span>
+                                            </div>
+                                            <div className="flex text-yellow-500 text-sm">
+                                                {[1, 2, 3, 4, 5].map(s => <span key={s} className={s <= review.rating ? "text-yellow-500" : "text-gray-200"}>★</span>)}
+                                            </div>
+                                        </div>
+                                        {review.reviewText && (
+                                            <p className="text-sm text-gray-600 leading-relaxed mt-2">{review.reviewText}</p>
+                                        )}
+                                    </div>
+                                ))
+                            )}
                         </div>
                     </div>
                 )}
