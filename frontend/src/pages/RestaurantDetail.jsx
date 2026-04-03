@@ -274,7 +274,7 @@ export default function RestaurantDetail() {
                             <span className="font-bold">View Cart</span>
                         </div>
                         <div className="flex items-center gap-1 font-black">
-                            ${cartTotal.toFixed(2)} <ChevronRight className="w-5 h-5" />
+                            ₹{cartTotal.toFixed(2)} <ChevronRight className="w-5 h-5" />
                         </div>
                     </button>
                 </div>

@@ -7,7 +7,7 @@ import { api } from "../api/client";
 
 const CUISINES = ["All", "Italian", "Indian", "Chinese", "Japanese", "Mexican", "American", "Thai", "Mediterranean"];
 const RATINGS = [{ label: "4.5+", value: 4.5 }, { label: "4.0+", value: 4.0 }, { label: "3.5+", value: 3.5 }];
-const PRICE_RANGES = ["$", "$$", "$$$", "$$$$"];
+const PRICE_RANGES = ["₹", "₹₹", "₹₹₹", "₹₹₹₹"];
 const SORT_OPTIONS = [
     { label: "Relevance", value: "relevance" },
     { label: "Rating", value: "rating" },

@@ -42,7 +42,7 @@ export default function Cart() {
             if (c.expiry_date && new Date(c.expiry_date) < new Date()) {
                 setPromoError("This coupon has expired");
             } else if (subtotal < (c.min_order || 0)) {
-                setPromoError(`Minimum order $${c.min_order} required`);
+                setPromoError(`Minimum order ₹${c.min_order} required`);
             } else {
                 setAppliedCoupon(c);
             }
@@ -108,8 +108,8 @@ export default function Cart() {
 
                                     <div className="flex-1 min-w-0">
                                         <h4 className="font-bold text-gray-900 text-sm truncate">{item.name}</h4>
-                                        <p className="text-orange-500 font-bold text-sm mt-0.5">${(item.price * item.quantity).toFixed(2)}</p>
-                                        <p className="text-xs text-gray-400">${item.price.toFixed(2)} each</p>
+                                        <p className="text-orange-500 font-bold text-sm mt-0.5">₹{(item.price * item.quantity).toFixed(2)}</p>
+                                        <p className="text-xs text-gray-400">₹{item.price.toFixed(2)} each</p>
                                     </div>
 
                                     <div className="flex items-center gap-2">
@@ -139,7 +139,7 @@ export default function Cart() {
                             {appliedCoupon ? (
                                 <div className="flex items-center gap-3 bg-green-50 border border-green-200 rounded-xl p-3">
                                     <span className="text-green-600 text-sm font-bold">✅ {appliedCoupon.code} applied!</span>
-                                    <span className="text-green-600 text-sm">-${discount.toFixed(2)}</span>
+                                    <span className="text-green-600 text-sm">₹{discount.toFixed(2)}</span>
                                     <button onClick={() => setAppliedCoupon(null)} className="ml-auto text-xs text-red-500 font-medium hover:underline">Remove</button>
                                 </div>
                             ) : (
@@ -173,27 +173,27 @@ export default function Cart() {
                             <div className="space-y-3 text-sm">
                                 <div className="flex justify-between text-gray-600">
                                     <span>Subtotal ({cart.reduce((s, i) => s + i.quantity, 0)} items)</span>
-                                    <span className="font-semibold text-gray-900">${subtotal.toFixed(2)}</span>
+                                    <span className="font-semibold text-gray-900">₹{subtotal.toFixed(2)}</span>
                                 </div>
                                 <div className="flex justify-between text-gray-600">
                                     <span>Delivery fee</span>
                                     <span className={`font-semibold ${deliveryFee === 0 ? "text-green-500" : "text-gray-900"}`}>
-                                        {deliveryFee === 0 ? "FREE" : `$${deliveryFee.toFixed(2)}`}
+                                        {deliveryFee === 0 ? "FREE" : `₹${deliveryFee.toFixed(2)}`}
                                     </span>
                                 </div>
                                 {discount > 0 && (
                                     <div className="flex justify-between text-green-500">
                                         <span>Promo discount</span>
-                                        <span className="font-semibold">-${discount.toFixed(2)}</span>
+                                        <span className="font-semibold">-₹{discount.toFixed(2)}</span>
                                     </div>
                                 )}
                                 <div className="flex justify-between text-gray-600">
                                     <span>Taxes & fees</span>
-                                    <span className="font-semibold text-gray-900">${taxes.toFixed(2)}</span>
+                                    <span className="font-semibold text-gray-900">₹{taxes.toFixed(2)}</span>
                                 </div>
                                 <div className="border-t border-gray-100 pt-3 flex justify-between">
                                     <span className="font-black text-gray-900 text-base">Total</span>
-                                    <span className="font-black text-orange-500 text-xl">${total.toFixed(2)}</span>
+                                    <span className="font-black text-orange-500 text-xl">₹{total.toFixed(2)}</span>
                                 </div>
                             </div>
 

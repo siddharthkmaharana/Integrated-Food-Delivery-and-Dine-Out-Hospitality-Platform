@@ -124,19 +124,19 @@ export default function OrderTracking() {
                         {order.items?.map((item, i) => (
                             <div key={i} className="flex justify-between text-sm">
                                 <span className="text-gray-600">{item.name} × {item.quantity}</span>
-                                <span className="font-semibold">${(item.price * item.quantity).toFixed(2)}</span>
+                                <span className="font-semibold">₹{(item.price * item.quantity).toFixed(2)}</span>
                             </div>
                         ))}
                     </div>
                     <div className="border-t border-gray-100 pt-3 space-y-1.5 text-sm">
                         <div className="flex justify-between text-gray-500">
-                            <span>Subtotal</span><span>${order.subtotal?.toFixed(2)}</span>
+                            <span>Subtotal</span><span>₹{order.subtotal?.toFixed(2)}</span>
                         </div>
                         <div className="flex justify-between text-gray-500">
-                            <span>Delivery</span><span>${order.delivery_fee?.toFixed(2)}</span>
+                            <span>Delivery</span><span>₹{order.delivery_fee?.toFixed(2)}</span>
                         </div>
                         <div className="flex justify-between font-black text-gray-900 text-base pt-1">
-                            <span>Total</span><span className="text-orange-500">${order.totalAmount?.toFixed(2) || order.total?.toFixed(2)}</span>
+                            <span>Total</span><span className="text-orange-500">₹{order.totalAmount?.toFixed(2) || order.total?.toFixed(2)}</span>
                         </div>
                     </div>
                 </div>

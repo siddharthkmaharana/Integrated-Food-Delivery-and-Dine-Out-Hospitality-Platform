@@ -1,3 +1,4 @@
+import { api } from "@/api/client";
 import { useState, useEffect } from "react";
 import {
     MapPin, Package, Navigation2, CheckCircle2,
@@ -13,17 +14,17 @@ export default function CourierDashboard() {
     const [statusFilter, setStatusFilter] = useState("active");
 
     useEffect(() => {
-        base44.auth.me().then(async u => {
-            if (!u) { base44.auth.redirectToLogin(); return; }
+        api.auth.me().then(async u => {
+            if (!u) { api.auth.redirectToLogin(); return; }
             setUser(u);
-            const ords = await base44.entities.Order.filter({}, "-created_date", 100);
+            const ords = await api.orders.filter({}, "-created_date", 100);
             setOrders(ords);
             setLoading(false);
-        }).catch(() => base44.auth.redirectToLogin());
+        }).catch(() => api.auth.redirectToLogin());
     }, []);
 
     const updateOrderStatus = async (orderId, status) => {
-        await base44.entities.Order.update(orderId, { status });
+        await api.orders.update(orderId, { status });
         setOrders(os => os.map(o => o.id === orderId ? { ...o, status } : o));
     };
 

@@ -22,7 +22,7 @@ export default function MenuSection({ category, items, getItemQty, updateCart })
                                 </div>
                                 <p className="text-xs text-gray-500 line-clamp-2 mb-2">{item.description}</p>
                                 <div className="flex items-center gap-3">
-                                    <span className="font-black text-gray-900">${item.price?.toFixed(2)}</span>
+                                    <span className="font-black text-gray-900">₹{item.price?.toFixed(2)}</span>
                                     {item.prep_time && <span className="text-xs text-gray-400">~{item.prep_time} min</span>}
                                 </div>
                             </div>

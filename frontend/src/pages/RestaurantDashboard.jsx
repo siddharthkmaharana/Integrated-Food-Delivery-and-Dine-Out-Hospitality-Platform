@@ -1,3 +1,4 @@
+import { api } from "@/api/client";
 import { useState, useEffect } from "react";
 import {
     LayoutDashboard, UtensilsCrossed, Package, Calendar,
@@ -33,40 +34,40 @@ export default function RestaurantDashboard() {
     const [newItem, setNewItem] = useState({ name: "", price: "", category: "", description: "", is_veg: false, is_available: true, is_bestseller: false });
 
     useEffect(() => {
-        base44.auth.me().then(async u => {
-            if (!u) { base44.auth.redirectToLogin(); return; }
+        api.auth.me().then(async u => {
+            if (!u) { api.auth.redirectToLogin(); return; }
             setUser(u);
-            const rests = await base44.entities.Restaurant.filter({ owner_email: u.email }).catch(() => []);
+            const rests = await api.restaurants.filter({ owner_email: u.email }).catch(() => []);
             // Admins can see all, owners see their own
             const myRest = rests[0];
             if (!myRest && u.role !== "admin") {
                 return;
             }
-            const r = myRest || (await base44.entities.Restaurant.list("-created_date", 1))[0];
+            const r = myRest || (await api.restaurants.list("-created_date", 1))[0];
             if (!r) { setLoading(false); return; }
             setRestaurant(r);
             const [items, ords, res, revs] = await Promise.all([
-                base44.entities.MenuItem.filter({ restaurant_id: r.id }),
-                base44.entities.Order.filter({ restaurant_id: r.id }, "-created_date", 50),
-                base44.entities.Reservation.filter({ restaurant_id: r.id }, "-created_date", 50),
-                base44.entities.Review.filter({ restaurantId: r.id }, "-createdAt", 50).catch(() => []), 
+                api.menuItems.filter({ restaurant_id: r.id }),
+                api.orders.filter({ restaurant_id: r.id }, "-created_date", 50),
+                api.reservations.filter({ restaurant_id: r.id }, "-created_date", 50),
+                api.reviews.filter({ restaurantId: r.id }, "-createdAt", 50).catch(() => []), 
             ]);
             setMenuItems(items);
             setOrders(ords);
             setReservations(res);
             setReviews(revs);
             setLoading(false);
-        }).catch(() => base44.auth.redirectToLogin());
+        }).catch(() => api.auth.redirectToLogin());
     }, []);
 
     const updateOrderStatus = async (orderId, status) => {
-        await base44.entities.Order.update(orderId, { status });
+        await api.orders.update(orderId, { status });
         setOrders(os => os.map(o => o.id === orderId ? { ...o, status } : o));
     };
 
     const addMenuItem = async () => {
         if (!newItem.name || !newItem.price) return;
-        const item = await base44.entities.MenuItem.create({
+        const item = await api.menuItems.create({
             ...newItem,
             price: parseFloat(newItem.price),
             restaurant_id: restaurant.id,
@@ -78,12 +79,12 @@ export default function RestaurantDashboard() {
     };
 
     const deleteItem = async (id) => {
-        await base44.entities.MenuItem.delete(id);
+        await api.menuItems.delete(id);
         setMenuItems(items => items.filter(i => i.id !== id));
     };
 
     const saveEdit = async () => {
-        await base44.entities.MenuItem.update(editItem.id, editItem);
+        await api.menuItems.update(editItem.id, editItem);
         setMenuItems(items => items.map(i => i.id === editItem.id ? editItem : i));
         setEditItem(null);
     };
@@ -324,9 +325,9 @@ export default function RestaurantDashboard() {
                                     <div className="flex gap-2">
                                         {res.status === "pending" && (
                                             <>
-                                                <button onClick={() => base44.entities.Reservation.update(res.id, { status: "confirmed" }).then(() => setReservations(rs => rs.map(r => r.id === res.id ? { ...r, status: "confirmed" } : r)))}
+                                                <button onClick={() => api.reservations.update(res.id, { status: "confirmed" }).then(() => setReservations(rs => rs.map(r => r.id === res.id ? { ...r, status: "confirmed" } : r)))}
                                                     className="p-2 bg-green-100 text-green-600 rounded-xl hover:bg-green-200"><Check className="w-4 h-4" /></button>
-                                                <button onClick={() => base44.entities.Reservation.update(res.id, { status: "cancelled" }).then(() => setReservations(rs => rs.map(r => r.id === res.id ? { ...r, status: "cancelled" } : r)))}
+                                                <button onClick={() => api.reservations.update(res.id, { status: "cancelled" }).then(() => setReservations(rs => rs.map(r => r.id === res.id ? { ...r, status: "cancelled" } : r)))}
                                                     className="p-2 bg-red-100 text-red-600 rounded-xl hover:bg-red-200"><X className="w-4 h-4" /></button>
                                             </>
                                         )}
