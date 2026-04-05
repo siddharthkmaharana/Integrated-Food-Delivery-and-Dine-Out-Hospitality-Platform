@@ -137,7 +137,7 @@ export default function Profile() {
                                             {order.items?.map(i => i.name).join(", ")}
                                         </p>
                                         <div className="flex items-center justify-between">
-                                            <span className="font-black text-gray-900">${order.total?.toFixed(2)}</span>
+                                            <span className="font-black text-gray-900">₹{order.total?.toFixed(2)}</span>
                                             <ChevronRight className="w-4 h-4 text-gray-400" />
                                         </div>
                                     </div>

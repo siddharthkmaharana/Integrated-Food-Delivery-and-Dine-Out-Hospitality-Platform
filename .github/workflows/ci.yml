@@ -1,0 +1,47 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ "main", "week4/siddharth" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    services:
+      mongodb:
+        image: mongo:6.0
+        ports:
+          - 27017:27017
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Use Node.js 18.x
+      uses: actions/setup-node@v4
+      with:
+        node-version: 18.x
+
+    # Backend Setup and Tests
+    - name: Install Backend Dependencies
+      working-directory: ./backend
+      run: npm install
+
+
+    # - name: Run Backend Tests
+    #   working-directory: ./backend
+    #   run: npm test
+    #   env:
+    #     MONGO_URI: mongodb://localhost:27017/fooddelivery_test
+    #     JWT_SECRET: testing_secret
+
+    # Frontend Setup and Build
+    - name: Install Frontend Dependencies
+      working-directory: ./frontend
+      run: npm install
+
+    - name: Build Frontend
+      working-directory: ./frontend
+      run: npm run build

@@ -199,7 +199,7 @@ export default function Checkout() {
                   {cart.map(item => (
                     <div key={item.id} className="flex justify-between text-sm">
                       <span className="text-gray-600">{item.name} × {item.quantity}</span>
-                      <span className="font-semibold text-gray-900">${(item.price * item.quantity).toFixed(2)}</span>
+                      <span className="font-semibold text-gray-900">₹{(item.price * item.quantity).toFixed(2)}</span>
                     </div>
                   ))}
                 </div>
@@ -216,7 +216,7 @@ export default function Checkout() {
                   disabled={loading}
                   className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white h-14 rounded-2xl font-black text-base shadow-xl shadow-orange-200"
                 >
-                  {loading ? "Placing Order..." : `Place Order · $${total.toFixed(2)}`}
+                  {loading ? "Placing Order..." : `Place Order · ₹${total.toFixed(2)}`}
                 </Button>
               </div>
             )}
@@ -227,12 +227,12 @@ export default function Checkout() {
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 sticky top-24">
               <h3 className="font-black text-gray-900 mb-4">Order Summary</h3>
               <div className="space-y-2 text-sm text-gray-600">
-                <div className="flex justify-between"><span>Subtotal</span><span className="font-semibold text-gray-900">${subtotal.toFixed(2)}</span></div>
-                <div className="flex justify-between"><span>Delivery</span><span className="font-semibold text-gray-900">${deliveryFee.toFixed(2)}</span></div>
-                <div className="flex justify-between"><span>Taxes</span><span className="font-semibold text-gray-900">${taxes.toFixed(2)}</span></div>
+                <div className="flex justify-between"><span>Subtotal</span><span className="font-semibold text-gray-900">₹{subtotal.toFixed(2)}</span></div>
+                <div className="flex justify-between"><span>Delivery</span><span className="font-semibold text-gray-900">₹{deliveryFee.toFixed(2)}</span></div>
+                <div className="flex justify-between"><span>Taxes</span><span className="font-semibold text-gray-900">₹{taxes.toFixed(2)}</span></div>
                 <div className="border-t border-gray-100 pt-2 flex justify-between font-black text-gray-900 text-base">
                   <span>Total</span>
-                  <span className="text-orange-500 text-lg">${total.toFixed(2)}</span>
+                  <span className="text-orange-500 text-lg">₹{total.toFixed(2)}</span>
                 </div>
               </div>
               <div className="mt-4 text-xs text-gray-400 text-center">
