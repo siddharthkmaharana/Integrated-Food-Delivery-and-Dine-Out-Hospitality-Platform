@@ -114,7 +114,7 @@ export default function AdminDashboard() {
                         </div>
                         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                             {[
-                                { label: "Total Revenue", value: `$${totalRevenue.toFixed(0)}`, icon: TrendingUp, color: "bg-green-50 text-green-600" },
+                                { label: "Total Revenue", value: `₹${totalRevenue.toFixed(0)}`, icon: TrendingUp, color: "bg-green-50 text-green-600" },
                                 { label: "Total Orders", value: orders.length, icon: Package, color: "bg-blue-50 text-blue-600" },
                                 { label: "Restaurants", value: restaurants.length, icon: Store, color: "bg-orange-50 text-orange-600" },
                                 { label: "Pending Approval", value: pending, icon: Eye, color: "bg-yellow-50 text-yellow-600" },
@@ -139,7 +139,7 @@ export default function AdminDashboard() {
                                             <p className="text-xs text-gray-400">{o.user_name || o.user_email}</p>
                                         </div>
                                         <span className={`text-xs font-bold px-2 py-0.5 rounded-full capitalize ${STATUS_COLORS[o.status] || "bg-gray-100 text-gray-600"}`}>{o.status?.replace(/_/g, " ")}</span>
-                                        <span className="font-bold text-gray-900">${o.total?.toFixed(2)}</span>
+                                        <span className="font-bold text-gray-900">₹{o.total?.toFixed(2)}</span>
                                     </div>
                                 ))}
                             </div>
@@ -199,7 +199,7 @@ export default function AdminDashboard() {
                                             <span className={`text-xs font-bold px-2 py-1 rounded-full capitalize ${STATUS_COLORS[o.status] || "bg-gray-100 text-gray-600"}`}>
                                                 {o.status?.replace(/_/g, " ")}
                                             </span>
-                                            <span className="font-black text-gray-900">${o.total?.toFixed(2)}</span>
+                                            <span className="font-black text-gray-900">₹{o.total?.toFixed(2)}</span>
                                         </div>
                                     </div>
                                     <p className="text-xs text-gray-500">{o.items?.map(i => `${i.name} ×${i.quantity}`).join(", ")}</p>
@@ -232,7 +232,7 @@ export default function AdminDashboard() {
                                 </select>
                                 <Input
                                     type="number"
-                                    placeholder={newCoupon.discount_type === "percentage" ? "Discount %" : "Amount $"}
+                                    placeholder={newCoupon.discount_type === "percentage" ? "Discount %" : "Amount ₹"}
                                     value={newCoupon.discount_value}
                                     onChange={e => setNewCoupon(c => ({ ...c, discount_value: parseFloat(e.target.value) }))}
                                     className="rounded-xl"
@@ -254,8 +254,8 @@ export default function AdminDashboard() {
                                             </span>
                                         </div>
                                         <p className="text-sm text-gray-500">
-                                            {c.discount_type === "percentage" ? `${c.discount_value}% off` : `$${c.discount_value} off`}
-                                            {c.min_order > 0 && ` · Min order $${c.min_order}`}
+                                            {c.discount_type === "percentage" ? `${c.discount_value}% off` : `₹${c.discount_value} off`}
+                                            {c.min_order > 0 && ` · Min order ₹${c.min_order}`}
                                         </p>
                                     </div>
                                     <button onClick={() => deleteCoupon(c.id)} className="p-2 text-gray-400 hover:text-red-500 transition-colors">

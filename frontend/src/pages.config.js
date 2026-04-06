@@ -57,6 +57,7 @@ import TableBooking from './pages/TableBooking';
 import Profile from './pages/Profile';
 import AdminDashboard from './pages/AdminDashboard';
 import RestaurantDashboard from './pages/RestaurantDashboard';
+import CourierDashboard from './pages/CourierDashboard';
 import Login from './pages/Login';
 import __Layout from './Layout.jsx';
 
@@ -72,6 +73,7 @@ export const PAGES = {
     "Profile": Profile,
     "AdminDashboard": AdminDashboard,
     "RestaurantDashboard": RestaurantDashboard,
+    "CourierDashboard": CourierDashboard,
     "login": Login,
 }
 
