@@ -11,10 +11,7 @@
     "lint": "eslint src/**/*.js"
   },
   "jest": {
-    "transform": {},
-    "extensionsToTreatAsEsm": [
-      ".js"
-    ]
+    "transform": {}
   },
   "keywords": [],
   "author": "",
