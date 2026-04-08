@@ -7,7 +7,9 @@ describe('Geospatial Query Tests', () => {
   beforeAll(async () => {
     await mongoose.connect(process.env.MONGO_URI);
 
-    // ✅ Force index creation before any test
+    // ✅ Clean existing and force fresh index creation
+    await Restaurant.collection.dropIndexes().catch(() => {});
+    await Restaurant.createIndexes();
     await Restaurant.init();
   }, 30000);
 
