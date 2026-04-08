@@ -47,10 +47,10 @@ export default function RestaurantDashboard() {
             if (!r) { setLoading(false); return; }
             setRestaurant(r);
             const [items, ords, res, revs] = await Promise.all([
-                api.menuItems.filter({ restaurant_id: r.id }),
-                api.orders.filter({ restaurant_id: r.id }, "-created_date", 50),
-                api.reservations.filter({ restaurant_id: r.id }, "-created_date", 50),
-                api.reviews.filter({ restaurantId: r.id }, "-createdAt", 50).catch(() => []), 
+                api.menuItems.filter({ restaurant_id: r._id }),
+                api.orders.filter({ restaurant_id: r._id }, "-created_date", 50),
+                api.reservations.filter({ restaurant_id: r._id }, "-created_date", 50),
+                api.reviews.filter({ restaurant_id: r._id }, "-createdAt", 50).catch(() => []), 
             ]);
             setMenuItems(items);
             setOrders(ords);
@@ -62,7 +62,7 @@ export default function RestaurantDashboard() {
 
     const updateOrderStatus = async (orderId, status) => {
         await api.orders.update(orderId, { status });
-        setOrders(os => os.map(o => o.id === orderId ? { ...o, status } : o));
+        setOrders(os => os.map(o => o._id === orderId ? { ...o, status } : o));
     };
 
     const addMenuItem = async () => {
@@ -70,7 +70,7 @@ export default function RestaurantDashboard() {
         const item = await api.menuItems.create({
             ...newItem,
             price: parseFloat(newItem.price),
-            restaurant_id: restaurant.id,
+            restaurant_id: restaurant._id,
             restaurant_name: restaurant.name,
         });
         setMenuItems(items => [...items, item]);
@@ -80,12 +80,12 @@ export default function RestaurantDashboard() {
 
     const deleteItem = async (id) => {
         await api.menuItems.delete(id);
-        setMenuItems(items => items.filter(i => i.id !== id));
+        setMenuItems(items => items.filter(i => i._id !== id));
     };
 
     const saveEdit = async () => {
-        await api.menuItems.update(editItem.id, editItem);
-        setMenuItems(items => items.map(i => i.id === editItem.id ? editItem : i));
+        await api.menuItems.update(editItem._id, editItem);
+        setMenuItems(items => items.map(i => i._id === editItem._id ? editItem : i));
         setEditItem(null);
     };
 
@@ -178,7 +178,7 @@ export default function RestaurantDashboard() {
                                 </h3>
                                 <div className="space-y-3">
                                     {activeOrders.map(o => (
-                                        <div key={o.id} className="flex items-center gap-4 border border-gray-100 rounded-xl p-3">
+                                        <div key={o._id} className="flex items-center gap-4 border border-gray-100 rounded-xl p-3">
                                             <div className="flex-1">
                                                 <p className="font-bold text-sm text-gray-900">{o.user_name}</p>
                                                 <p className="text-xs text-gray-400">{o.items?.map(i => `${i.name} ×${i.quantity}`).join(", ")}</p>
@@ -229,8 +229,8 @@ export default function RestaurantDashboard() {
 
                         <div className="space-y-3">
                             {menuItems.map(item => (
-                                <div key={item.id} className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center gap-4">
-                                    {editItem?.id === item.id ? (
+                                <div key={item._id} className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center gap-4">
+                                    {editItem?._id === item._id ? (
                                         <div className="flex-1 grid grid-cols-3 gap-2">
                                             <Input value={editItem.name} onChange={e => setEditItem(i => ({ ...i, name: e.target.value }))} className="rounded-xl text-sm" />
                                             <Input value={editItem.price} type="number" onChange={e => setEditItem(i => ({ ...i, price: parseFloat(e.target.value) }))} className="rounded-xl text-sm" />
@@ -253,7 +253,7 @@ export default function RestaurantDashboard() {
                                         </div>
                                     )}
                                     <div className="flex items-center gap-2 flex-shrink-0">
-                                        {editItem?.id === item.id ? (
+                                        {editItem?._id === item._id ? (
                                             <>
                                                 <button onClick={saveEdit} className="p-2 bg-green-100 text-green-600 rounded-xl hover:bg-green-200"><Save className="w-4 h-4" /></button>
                                                 <button onClick={() => setEditItem(null)} className="p-2 bg-gray-100 text-gray-500 rounded-xl"><X className="w-4 h-4" /></button>
@@ -261,7 +261,7 @@ export default function RestaurantDashboard() {
                                         ) : (
                                             <>
                                                 <button onClick={() => setEditItem({ ...item })} className="p-2 bg-blue-100 text-blue-600 rounded-xl hover:bg-blue-200"><Edit3 className="w-4 h-4" /></button>
-                                                <button onClick={() => deleteItem(item.id)} className="p-2 bg-red-100 text-red-600 rounded-xl hover:bg-red-200"><Trash2 className="w-4 h-4" /></button>
+                                                <button onClick={() => deleteItem(item._id)} className="p-2 bg-red-100 text-red-600 rounded-xl hover:bg-red-200"><Trash2 className="w-4 h-4" /></button>
                                             </>
                                         )}
                                     </div>
@@ -276,7 +276,7 @@ export default function RestaurantDashboard() {
                         <h1 className="text-2xl font-black text-gray-900 mb-6">Orders ({orders.length})</h1>
                         <div className="space-y-4">
                             {orders.map(o => (
-                                <div key={o.id} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+                                <div key={o._id} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
                                     <div className="flex items-start justify-between mb-2">
                                         <div>
                                             <p className="font-bold text-gray-900">{o.user_name}</p>
@@ -289,7 +289,7 @@ export default function RestaurantDashboard() {
                                         <span className="text-xs text-gray-500 font-medium">Status:</span>
                                         <select
                                             value={o.status}
-                                            onChange={e => updateOrderStatus(o.id, e.target.value)}
+                                            onChange={e => updateOrderStatus(o._id, e.target.value)}
                                             className={`text-xs font-bold px-2 py-1 rounded-full border-none outline-none cursor-pointer ${STATUS_COLORS[o.status] || "bg-gray-100 text-gray-600"}`}
                                         >
                                             {ORDER_STATUSES.map(s => (
@@ -311,7 +311,7 @@ export default function RestaurantDashboard() {
                         <h1 className="text-2xl font-black text-gray-900 mb-6">Reservations ({reservations.length})</h1>
                         <div className="space-y-3">
                             {reservations.map(res => (
-                                <div key={res.id} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-center gap-4">
+                                <div key={res._id} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-center gap-4">
                                     <div className="flex-1">
                                         <div className="flex items-center gap-2 mb-1">
                                             <p className="font-bold text-gray-900">{res.user_name}</p>
@@ -325,9 +325,9 @@ export default function RestaurantDashboard() {
                                     <div className="flex gap-2">
                                         {res.status === "pending" && (
                                             <>
-                                                <button onClick={() => api.reservations.update(res.id, { status: "confirmed" }).then(() => setReservations(rs => rs.map(r => r.id === res.id ? { ...r, status: "confirmed" } : r)))}
+                                                <button onClick={() => api.reservations.update(res._id, { status: "confirmed" }).then(() => setReservations(rs => rs.map(r => r._id === res._id ? { ...r, status: "confirmed" } : r)))}
                                                     className="p-2 bg-green-100 text-green-600 rounded-xl hover:bg-green-200"><Check className="w-4 h-4" /></button>
-                                                <button onClick={() => api.reservations.update(res.id, { status: "cancelled" }).then(() => setReservations(rs => rs.map(r => r.id === res.id ? { ...r, status: "cancelled" } : r)))}
+                                                <button onClick={() => api.reservations.update(res._id, { status: "cancelled" }).then(() => setReservations(rs => rs.map(r => r._id === res._id ? { ...r, status: "cancelled" } : r)))}
                                                     className="p-2 bg-red-100 text-red-600 rounded-xl hover:bg-red-200"><X className="w-4 h-4" /></button>
                                             </>
                                         )}
@@ -350,7 +350,7 @@ export default function RestaurantDashboard() {
                                 </div>
                             ) : (
                                 reviews.map(review => (
-                                    <div key={review.id} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+                                    <div key={review._id} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
                                         <div className="flex items-center justify-between mb-2">
                                             <div className="flex items-center gap-2">
                                                 <p className="font-bold text-gray-900">{review.user_name || review.user?.name || "Anonymous"}</p>

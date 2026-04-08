@@ -25,7 +25,7 @@ export default function CourierDashboard() {
 
     const updateOrderStatus = async (orderId, status) => {
         await api.orders.update(orderId, { status });
-        setOrders(os => os.map(o => o.id === orderId ? { ...o, status } : o));
+        setOrders(os => os.map(o => o._id === orderId ? { ...o, status } : o));
     };
 
     const myOrders = orders.filter(o => o.status !== "placed" && o.status !== "cancelled" && o.status !== "confirmed");
@@ -106,7 +106,7 @@ export default function CourierDashboard() {
                     ) : (
                         <div className="space-y-4">
                             {displayedOrders.map(o => (
-                                <div key={o.id} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 relative overflow-hidden">
+                                <div key={o._id} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 relative overflow-hidden">
                                      {o.status === "preparing" && <div className="absolute top-0 left-0 w-1.5 h-full bg-yellow-400" />}
                                      {o.status === "picked_up" && <div className="absolute top-0 left-0 w-1.5 h-full bg-orange-500" />}
                                      {o.status === "out_for_delivery" && <div className="absolute top-0 left-0 w-1.5 h-full bg-blue-500" />}
@@ -141,17 +141,17 @@ export default function CourierDashboard() {
                                         </div>
                                         <div className="flex flex-col gap-2 w-full md:w-auto">
                                              {o.status === "preparing" && (
-                                                <Button onClick={() => updateOrderStatus(o.id, "picked_up")} className="bg-yellow-500 hover:bg-yellow-600 text-white rounded-xl">
+                                                <Button onClick={() => updateOrderStatus(o._id, "picked_up")} className="bg-yellow-500 hover:bg-yellow-600 text-white rounded-xl">
                                                     Mark as Picked Up
                                                 </Button>
                                              )}
                                               {o.status === "picked_up" && (
-                                                <Button onClick={() => updateOrderStatus(o.id, "out_for_delivery")} className="bg-blue-500 hover:bg-blue-600 text-white rounded-xl">
+                                                <Button onClick={() => updateOrderStatus(o._id, "out_for_delivery")} className="bg-blue-500 hover:bg-blue-600 text-white rounded-xl">
                                                     Start Delivery Journey
                                                 </Button>
                                              )}
                                               {o.status === "out_for_delivery" && (
-                                                <Button onClick={() => updateOrderStatus(o.id, "delivered")} className="bg-green-500 hover:bg-green-600 text-white rounded-xl">
+                                                <Button onClick={() => updateOrderStatus(o._id, "delivered")} className="bg-green-500 hover:bg-green-600 text-white rounded-xl">
                                                     <CheckCircle2 className="w-4 h-4 mr-2" /> Mark as Delivered
                                                 </Button>
                                              )}

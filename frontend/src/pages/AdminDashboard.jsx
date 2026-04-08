@@ -51,7 +51,7 @@ export default function AdminDashboard() {
 
     const approveRestaurant = async (id, val) => {
         await api.restaurants.update(id, { is_approved: val });
-        setRestaurants(rs => rs.map(r => r.id === id ? { ...r, is_approved: val } : r));
+        setRestaurants(rs => rs.map(r => r._id === id ? { ...r, is_approved: val } : r));
     };
 
     const createCoupon = async () => {
@@ -62,7 +62,7 @@ export default function AdminDashboard() {
 
     const deleteCoupon = async (id) => {
         await api.coupons.delete(id);
-        setCoupons(cs => cs.filter(c => c.id !== id));
+        setCoupons(cs => cs.filter(c => c._id !== id));
     };
 
     const totalRevenue = orders.filter(o => o.status === "delivered").reduce((s, o) => s + (o.total || 0), 0);
@@ -133,7 +133,7 @@ export default function AdminDashboard() {
                             <h3 className="font-black text-gray-900 mb-4">Recent Orders</h3>
                             <div className="space-y-3">
                                 {orders.slice(0, 10).map(o => (
-                                    <div key={o.id} className="flex items-center gap-4 text-sm border-b border-gray-50 pb-3 last:border-0 last:pb-0">
+                                    <div key={o._id} className="flex items-center gap-4 text-sm border-b border-gray-50 pb-3 last:border-0 last:pb-0">
                                         <div className="flex-1 min-w-0">
                                             <p className="font-bold text-gray-900 truncate">{o.restaurant_name}</p>
                                             <p className="text-xs text-gray-400">{o.user_name || o.user_email}</p>
@@ -152,7 +152,7 @@ export default function AdminDashboard() {
                         <h1 className="text-2xl font-black text-gray-900 mb-6">Restaurants ({restaurants.length})</h1>
                         <div className="space-y-3">
                             {restaurants.map(r => (
-                                <div key={r.id} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-center gap-4">
+                                <div key={r._id} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-center gap-4">
                                     <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-orange-100 to-red-100 flex items-center justify-center text-2xl flex-shrink-0 overflow-hidden">
                                         {r.image ? <img src={r.image} alt={r.name} className="w-full h-full object-cover" /> : "🍽️"}
                                     </div>
@@ -169,10 +169,10 @@ export default function AdminDashboard() {
                                         </span>
                                         {!r.is_approved && r.is_approved !== false && (
                                             <>
-                                                <button onClick={() => approveRestaurant(r.id, true)} className="p-2 bg-green-100 text-green-600 rounded-xl hover:bg-green-200 transition-colors">
+                                                <button onClick={() => approveRestaurant(r._id, true)} className="p-2 bg-green-100 text-green-600 rounded-xl hover:bg-green-200 transition-colors">
                                                     <Check className="w-4 h-4" />
                                                 </button>
-                                                <button onClick={() => approveRestaurant(r.id, false)} className="p-2 bg-red-100 text-red-600 rounded-xl hover:bg-red-200 transition-colors">
+                                                <button onClick={() => approveRestaurant(r._id, false)} className="p-2 bg-red-100 text-red-600 rounded-xl hover:bg-red-200 transition-colors">
                                                     <X className="w-4 h-4" />
                                                 </button>
                                             </>
@@ -189,7 +189,7 @@ export default function AdminDashboard() {
                         <h1 className="text-2xl font-black text-gray-900 mb-6">All Orders ({orders.length})</h1>
                         <div className="space-y-3">
                             {orders.map(o => (
-                                <div key={o.id} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+                                <div key={o._id} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
                                     <div className="flex items-start justify-between mb-2">
                                         <div>
                                             <p className="font-bold text-gray-900">{o.restaurant_name}</p>
@@ -245,7 +245,7 @@ export default function AdminDashboard() {
 
                         <div className="space-y-3">
                             {coupons.map(c => (
-                                <div key={c.id} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-center gap-4">
+                                <div key={c._id} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-center gap-4">
                                     <div className="flex-1">
                                         <div className="flex items-center gap-3 mb-1">
                                             <span className="font-mono font-black text-orange-500 text-lg">{c.code}</span>
@@ -258,7 +258,7 @@ export default function AdminDashboard() {
                                             {c.min_order > 0 && ` · Min order ₹${c.min_order}`}
                                         </p>
                                     </div>
-                                    <button onClick={() => deleteCoupon(c.id)} className="p-2 text-gray-400 hover:text-red-500 transition-colors">
+                                    <button onClick={() => deleteCoupon(c._id)} className="p-2 text-gray-400 hover:text-red-500 transition-colors">
                                         <Trash2 className="w-4 h-4" />
                                     </button>
                                 </div>
