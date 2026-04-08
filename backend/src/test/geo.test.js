@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 import Restaurant from '../models/Restaurant.js';
-import * as dotenv from 'dotenv';
+import dotenv from 'dotenv';
 dotenv.config();
 
 describe('Geospatial Query Tests', () => {
