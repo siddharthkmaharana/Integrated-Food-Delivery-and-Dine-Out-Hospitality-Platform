@@ -4,6 +4,7 @@ import { createPageUrl } from "@/utils";
 import { MapPin, CreditCard, Wallet, Banknote, ChevronRight, ArrowLeft, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { api } from "@/api/client";
 
 export default function Checkout() {
   const navigate = useNavigate();
@@ -24,8 +25,12 @@ export default function Checkout() {
     if (c.length === 0) { navigate(createPageUrl("Cart")); return; }
     setCart(c);
     api.auth.me().then(u => {
-      setUser(u);
-    }).catch(() => navigate(createPageUrl("Cart")));
+      if (!u) {
+        api.auth.redirectToLogin();
+      } else {
+        setUser(u);
+      }
+    }).catch(() => api.auth.redirectToLogin());
   }, []);
 
   const subtotal = cart.reduce((s, i) => s + i.price * i.quantity, 0);
