@@ -4,6 +4,7 @@ import { createPageUrl } from "@/utils";
 import { Plus, Minus, Trash2, Tag, ChevronRight, ShoppingBag, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { api } from "@/api/client";
 
 export default function Cart() {
     const navigate = useNavigate();
