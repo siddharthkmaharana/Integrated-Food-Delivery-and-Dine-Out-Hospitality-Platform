@@ -150,10 +150,36 @@ export const api = {
       const { data } = await apiClient.put(`/orders/${id}`, payload);
       return data;
     },
-    subscribe: (cb) => {
+    subscribeOrder: (orderId, cb) => {
       const socket = io("http://localhost:5000");
+      socket.emit("join_order", orderId);
       socket.on("order_update", cb);
-      return () => socket.off("order_update", cb);
+      return () => {
+        socket.off("order_update", cb);
+        socket.disconnect();
+      };
+    },
+    subscribeRestaurant: (restaurantId, onNewOrder, onUpdate) => {
+      const socket = io("http://localhost:5000");
+      socket.emit("join_restaurant", restaurantId);
+      if (onNewOrder) socket.on("new_order", onNewOrder);
+      if (onUpdate) socket.on("order_update", onUpdate);
+      return () => {
+        if (onNewOrder) socket.off("new_order", onNewOrder);
+        if (onUpdate) socket.off("order_update", onUpdate);
+        socket.disconnect();
+      };
+    },
+    subscribeAdmin: (onNewOrder, onUpdate) => {
+      const socket = io("http://localhost:5000");
+      // Admins just listen to broadcasts if we broadcast, or we can listen to all
+      if (onNewOrder) socket.on("new_order", onNewOrder);
+      if (onUpdate) socket.on("order_update", onUpdate);
+      return () => {
+        if (onNewOrder) socket.off("new_order", onNewOrder);
+        if (onUpdate) socket.off("order_update", onUpdate);
+        socket.disconnect();
+      };
     },
   },
 

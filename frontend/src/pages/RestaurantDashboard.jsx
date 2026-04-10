@@ -60,6 +60,21 @@ export default function RestaurantDashboard() {
         }).catch(() => api.auth.redirectToLogin());
     }, []);
 
+    useEffect(() => {
+        if (!restaurant) return;
+        const unsub = api.orders.subscribeRestaurant(
+            restaurant._id,
+            (newOrderData) => {
+                // Fetch latest orders when a new one comes in to ensure full populated data
+                api.orders.filter({ restaurant_id: restaurant._id }, "-created_date", 50).then(setOrders);
+            },
+            (updateData) => {
+                setOrders(os => os.map(o => o._id === updateData.orderId ? { ...o, status: updateData.status } : o));
+            }
+        );
+        return unsub;
+    }, [restaurant]);
+
     const updateOrderStatus = async (orderId, status) => {
         await api.orders.update(orderId, { status });
         setOrders(os => os.map(o => o._id === orderId ? { ...o, status } : o));
