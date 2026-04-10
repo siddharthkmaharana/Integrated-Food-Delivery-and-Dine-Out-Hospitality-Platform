@@ -8,6 +8,7 @@ const orderSchema = new mongoose.Schema({
             name:String, price:Number,quantity:{type:Number,default:1}
         }
     ],
+    restaurant: { type: mongoose.Schema.Types.ObjectId, ref: 'Restaurant', required: true },
     restaurantName: String,
     subtotal: Number,
     deliveryFee: Number,

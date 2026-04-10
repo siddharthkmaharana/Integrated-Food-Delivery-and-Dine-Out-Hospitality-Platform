@@ -34,6 +34,20 @@ export default function AdminDashboard() {
         }).catch(() => api.auth.redirectToLogin());
     }, []);
 
+    useEffect(() => {
+        if (!user || user.role !== "admin") return;
+        const unsub = api.orders.subscribeAdmin(
+            (newOrder) => {
+                // Refresh list on a new order to ensure we have all data
+                api.orders.list("-created_date", 100).then(setOrders);
+            },
+            (update) => {
+                setOrders(os => os.map(o => o._id === update.orderId ? { ...o, status: update.status } : o));
+            }
+        );
+        return unsub;
+    }, [user]);
+
     const loadAll = async () => {
         setLoading(true);
         const [rests, ords, usrs, cops] = await Promise.all([

@@ -46,13 +46,19 @@ const createOrder = async (req, res) => {
     });
 
     const io = req.app.get('io');
-    io.to(restaurantId).emit('new_order', {
+    const newOrderEventData = {
       orderId: order._id,
       customerName: req.user.name,
       items: orderItems,
       totalAmount,
       deliveryAddress
-    });
+    };
+    
+    // Emit specifically to the restaurant
+    io.to(restaurantId).emit('new_order', newOrderEventData);
+    
+    // Also emit globally for admins
+    io.emit('new_order', newOrderEventData);
 
     res.status(201).json(order);
   } catch (error) {

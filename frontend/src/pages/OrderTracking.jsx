@@ -33,8 +33,12 @@ export default function OrderTracking() {
         loadOrder();
 
         // Subscribe to real-time updates
-        const unsub = api.orders.subscribe(event => {
-            if (event.id === orderId) setOrder(event.data);
+        const unsub = api.orders.subscribeOrder(orderId, event => {
+            if (event.orderId === orderId || event.id === orderId) {
+                // Since event might just have status, we need to merge or refetch
+                if (event.data) setOrder(event.data);
+                else setOrder(prev => ({ ...prev, status: event.status }));
+            }
         });
         return unsub;
     }, [orderId]);
