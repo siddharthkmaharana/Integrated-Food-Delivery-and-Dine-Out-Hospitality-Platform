@@ -23,5 +23,6 @@ const restaurantSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 restaurantSchema.index({ location: '2dsphere' });
+restaurantSchema.index({ owner: 1 });
 
 export default mongoose.model('Restaurant', restaurantSchema);
