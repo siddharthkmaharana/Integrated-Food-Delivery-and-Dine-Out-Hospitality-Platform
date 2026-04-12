@@ -202,6 +202,16 @@ export default function Layout({ children, currentPageName }) {
                                                 </DropdownMenuItem>
                                             </>
                                         )}
+                                        {(user.role === "courier") && (
+                                            <>
+                                                <DropdownMenuSeparator />
+                                                <DropdownMenuItem asChild className="rounded-xl">
+                                                    <Link to={createPageUrl("CourierDashboard")} className="flex items-center gap-2.5 px-3 py-2 text-green-600">
+                                                        <Package className="w-4 h-4" /> Courier Dashboard
+                                                    </Link>
+                                                </DropdownMenuItem>
+                                            </>
+                                        )}
 
                                         <DropdownMenuSeparator />
                                         <DropdownMenuItem

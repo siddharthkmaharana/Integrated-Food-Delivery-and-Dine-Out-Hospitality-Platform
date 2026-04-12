@@ -4,6 +4,7 @@ import {
   payOrder,
   updateOrderStatus,
   getMyOrders,
+  getAllOrders,
   getOrderById,
   getOrdersByUser,
   updateOrder
@@ -12,7 +13,7 @@ import { protect, authorize } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-router.get('/', protect, getMyOrders);
+router.get('/', protect, getAllOrders);
 router.get('/myorders', protect, getMyOrders);
 router.get('/user/:userId', protect, getOrdersByUser);
 router.get('/:id', protect, getOrderById);
