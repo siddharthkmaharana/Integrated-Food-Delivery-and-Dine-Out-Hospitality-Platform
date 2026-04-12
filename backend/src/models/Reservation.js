@@ -10,4 +10,7 @@ const reservationSchema = new mongoose.Schema({
   specialRequests: { type: String, default: '' }
 }, { timestamps: true });
 
+reservationSchema.index({ restaurant: 1, createdAt: -1 });
+reservationSchema.index({ user: 1, createdAt: -1 });
+
 export default mongoose.model('Reservation', reservationSchema);

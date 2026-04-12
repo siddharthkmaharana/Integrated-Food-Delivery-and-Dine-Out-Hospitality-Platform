@@ -10,4 +10,6 @@ const menuItemSchema = new mongoose.Schema({
     isAvailable:{type:Boolean, default:true}
 },{timestamps:true});
 
+menuItemSchema.index({ restaurant: 1 });
+
 export default mongoose.model('MenuItem',menuItemSchema);

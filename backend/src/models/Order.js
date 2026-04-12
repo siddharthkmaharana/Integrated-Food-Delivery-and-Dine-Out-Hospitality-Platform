@@ -27,4 +27,7 @@ const orderSchema = new mongoose.Schema({
         submitted:{type:Boolean, default:false}
     }
 },{timestamps:true});
+orderSchema.index({ restaurant: 1, createdAt: -1 });
+orderSchema.index({ customer: 1, createdAt: -1 });
+
 export default mongoose.model('Order',orderSchema);
