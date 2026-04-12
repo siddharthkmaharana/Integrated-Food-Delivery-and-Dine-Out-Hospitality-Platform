@@ -80,6 +80,17 @@ export default function RestaurantDashboard() {
         setOrders(os => os.map(o => o._id === orderId ? { ...o, status } : o));
     };
 
+    const toggleRestaurantStatus = async () => {
+        if (!restaurant) return;
+        const newStatus = !restaurant.isOpen;
+        try {
+            await api.restaurants.update(restaurant._id, { isOpen: newStatus });
+            setRestaurant({ ...restaurant, isOpen: newStatus });
+        } catch (error) {
+            console.error("Failed to update status", error);
+        }
+    };
+
     const addMenuItem = async () => {
         if (!newItem.name || !newItem.price) return;
         const item = await api.menuItems.create({
@@ -134,10 +145,13 @@ export default function RestaurantDashboard() {
                 <div className="mb-6 px-3">
                     <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Restaurant</p>
                     <p className="font-black text-white text-sm truncate">{restaurant.name}</p>
-                    <div className="flex items-center gap-1.5 mt-1">
-                        <div className={`w-2 h-2 rounded-full ${restaurant.is_open ? "bg-green-500" : "bg-gray-500"}`} />
-                        <p className="text-xs text-gray-400">{restaurant.is_open ? "Open" : "Closed"}</p>
-                    </div>
+                    <button 
+                        onClick={toggleRestaurantStatus}
+                        className="flex items-center gap-1.5 mt-2 hover:bg-gray-800 p-1.5 -ml-1.5 rounded-lg transition-colors cursor-pointer w-full text-left"
+                    >
+                        <div className={`w-2 h-2 rounded-full ${restaurant.isOpen ? "bg-green-500" : "bg-gray-500"}`} />
+                        <p className="text-xs font-bold text-gray-300 flex-1">{restaurant.isOpen ? "Accepting Orders & Bookings (Open)" : "Currently Closed"}</p>
+                    </button>
                 </div>
                 {TABS.map(t => (
                     <button
@@ -330,19 +344,19 @@ export default function RestaurantDashboard() {
                                     <div className="flex-1">
                                         <div className="flex items-center gap-2 mb-1">
                                             <p className="font-bold text-gray-900">{res.user_name}</p>
-                                            <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${res.status === "confirmed" ? "bg-green-100 text-green-600" :
-                                                    res.status === "cancelled" ? "bg-red-100 text-red-600" : "bg-yellow-100 text-yellow-700"
+                                        <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${res.status === "CONFIRMED" ? "bg-green-100 text-green-600" :
+                                                    res.status === "CANCELLED" ? "bg-red-100 text-red-600" : "bg-yellow-100 text-yellow-700"
                                                 }`}>{res.status}</span>
                                         </div>
                                         <p className="text-sm text-gray-500">{format(new Date(res.date), "MMM d, yyyy")} at {res.time} · {res.guests} guests</p>
                                         {res.special_requests && <p className="text-xs text-gray-400 mt-1">📝 {res.special_requests}</p>}
                                     </div>
                                     <div className="flex gap-2">
-                                        {res.status === "pending" && (
+                                        {res.status === "PENDING" && (
                                             <>
-                                                <button onClick={() => api.reservations.update(res._id, { status: "confirmed" }).then(() => setReservations(rs => rs.map(r => r._id === res._id ? { ...r, status: "confirmed" } : r)))}
+                                                <button onClick={() => api.reservations.update(res._id, { status: "CONFIRMED" }).then(() => setReservations(rs => rs.map(r => r._id === res._id ? { ...r, status: "CONFIRMED" } : r)))}
                                                     className="p-2 bg-green-100 text-green-600 rounded-xl hover:bg-green-200"><Check className="w-4 h-4" /></button>
-                                                <button onClick={() => api.reservations.update(res._id, { status: "cancelled" }).then(() => setReservations(rs => rs.map(r => r._id === res._id ? { ...r, status: "cancelled" } : r)))}
+                                                <button onClick={() => api.reservations.update(res._id, { status: "CANCELLED" }).then(() => setReservations(rs => rs.map(r => r._id === res._id ? { ...r, status: "CANCELLED" } : r)))}
                                                     className="p-2 bg-red-100 text-red-600 rounded-xl hover:bg-red-200"><X className="w-4 h-4" /></button>
                                             </>
                                         )}

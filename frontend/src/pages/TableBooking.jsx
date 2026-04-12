@@ -32,8 +32,8 @@ export default function TableBooking() {
     }, []);
 
     useEffect(() => {
-        if (user) {
-            api.reservations.filter({ user_email: user.email }).then(setBookings).catch(() => { });
+        if (user && user._id) {
+            api.reservations.filter({ user: user._id }).then(setBookings).catch(() => { });
         }
     }, [user]);
 
@@ -41,21 +41,28 @@ export default function TableBooking() {
         if (!user) { api.auth.redirectToLogin(); return; }
         if (!form.time) { alert("Please select a time slot."); return; }
         setLoading(true);
-        const res = await api.reservations.create({
-            user_email: user.email,
-            user_name: user.full_name || user.email,
-            restaurant_id: selected.id,
-            restaurant_name: selected.name,
-            date: form.date,
-            time: form.time,
-            guests: form.guests,
-            special_requests: form.requests,
-            status: "confirmed",
-        });
-        setSuccess(res);
-        setLoading(false);
-        const newBookings = await api.reservations.filter({ user_email: user.email });
-        setBookings(newBookings);
+        try {
+            const res = await api.reservations.create({
+                restaurant: selected._id || selected.id,
+                date: form.date,
+                time: form.time,
+                guests: form.guests,
+                specialRequests: form.requests,
+                status: "PENDING",
+                // Extra fields allowed by schema (if any) or ignored:
+                user_email: user.email,
+                user_name: user.full_name || user.email,
+                restaurant_name: selected.name,
+            });
+            setSuccess({ ...res, restaurant_name: selected.name });
+            const newBookings = await api.reservations.filter({ user: user._id });
+            setBookings(newBookings);
+        } catch (error) {
+            console.error("Booking error:", error);
+            alert("Booking failed. Please try again.");
+        } finally {
+            setLoading(false);
+        }
     };
 
     const today = format(new Date(), "yyyy-MM-dd");
@@ -220,11 +227,11 @@ export default function TableBooking() {
                         <h2 className="text-2xl font-black text-gray-900 mb-5">Your Reservations</h2>
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                             {bookings.map(b => (
-                                <div key={b.id} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+                                <div key={b.id || b._id} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
                                     <div className="flex items-start justify-between mb-3">
-                                        <h4 className="font-bold text-gray-900">{b.restaurant_name}</h4>
-                                        <span className={`text-xs font-bold px-2 py-1 rounded-full ${b.status === "confirmed" ? "bg-green-100 text-green-600" :
-                                                b.status === "cancelled" ? "bg-red-100 text-red-600" : "bg-yellow-100 text-yellow-600"
+                                        <h4 className="font-bold text-gray-900">{b.restaurant?.name || b.restaurant_name || "Unknown Restaurant"}</h4>
+                                        <span className={`text-xs font-bold px-2 py-1 rounded-full ${b.status === "CONFIRMED" ? "bg-green-100 text-green-600" :
+                                                b.status === "CANCELLED" ? "bg-red-100 text-red-600" : "bg-yellow-100 text-yellow-600"
                                             }`}>
                                             {b.status}
                                         </span>

@@ -131,6 +131,31 @@ const getMyOrders = async (req, res) => {
   }
 };
 
+const getAllOrders = async (req, res) => {
+  try {
+    const filter = {};
+    if (req.query.restaurant_id) filter.restaurant = req.query.restaurant_id;
+    if (req.query.status) filter.status = req.query.status;
+    
+    // If not admin/courier/restaurant, restrict to their own orders securely
+    if (req.user.role === 'customer' && !req.query.restaurant_id) {
+       filter.customer = req.user._id;
+    }
+    
+    // Limits
+    const limit = parseInt(req.query.limit) || 100;
+
+    const orders = await Order.find(filter)
+      .populate('restaurant', 'name address')
+      .populate('customer', 'name email')
+      .sort({ createdAt: -1 })
+      .limit(limit);
+    res.json(orders);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 const getOrderById = async (req, res) => {
   try {
     const order = await Order.findById(req.params.id)
@@ -168,4 +193,4 @@ const updateOrder = async (req, res) => {
   }
 };
 
-export { createOrder, payOrder, updateOrderStatus, getMyOrders, getOrderById, getOrdersByUser, updateOrder };
+export { createOrder, payOrder, updateOrderStatus, getMyOrders, getAllOrders, getOrderById, getOrdersByUser, updateOrder };
