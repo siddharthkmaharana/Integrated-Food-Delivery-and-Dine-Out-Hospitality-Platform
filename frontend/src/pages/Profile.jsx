@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
+import { api } from "@/api/client";
 import { createPageUrl } from "@/utils";
-import { User, Package, Heart, Calendar, MessageSquare, Settings, ChevronRight, Clock, Star } from "lucide-react";
+import { User, Package, Heart, Calendar, MessageSquare, Settings, ChevronRight, Clock, Star, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { format } from "date-fns";
@@ -20,19 +21,32 @@ export default function Profile() {
     const [user, setUser] = useState(null);
     const [orders, setOrders] = useState([]);
     const [reservations, setReservations] = useState([]);
-    const [activeTab, setActiveTab] = useState("orders");
+    const [favorites, setFavorites] = useState([]);
+    const location = useLocation();
+    
+    // Set initial tab from URL query param if present
+    const queryTab = new URLSearchParams(location.search).get("tab");
+    const [activeTab, setActiveTab] = useState(queryTab || "orders");
     const [editMode, setEditMode] = useState(false);
     const [editName, setEditName] = useState("");
     const [loading, setLoading] = useState(true);
 
+    // Update activeTab when URL changes
     useEffect(() => {
+        if (queryTab) setActiveTab(queryTab);
+    }, [queryTab]);
+
+    useEffect(() => {
+        const storedFavorites = JSON.parse(localStorage.getItem("foodhub_favorites") || "[]");
+        setFavorites(storedFavorites);
+        
         api.auth.me().then(u => {
             if (!u) { api.auth.redirectToLogin(); return; }
             setUser(u);
-            setEditName(u.full_name || "");
+            setEditName(u.name || u.full_name || "");
             return Promise.all([
-                api.orders.filter({ user_email: u.email }, "-created_date", 20),
-                api.reservations.filter({ user_email: u.email }, "-created_date", 20),
+                api.orders.filter({ userId: u._id }, "-created_date", 20),
+                api.reservations.filter({ user: u._id }, "-created_date", 20),
             ]);
         }).then(([ords, res]) => {
             if (ords) setOrders(ords);
@@ -57,6 +71,7 @@ export default function Profile() {
     const TABS = [
         { id: "orders", label: "Orders", icon: Package, count: orders.length },
         { id: "reservations", label: "Reservations", icon: Calendar, count: reservations.length },
+        { id: "favorites", label: "Favorites", icon: Heart, count: favorites.length },
         { id: "profile", label: "Profile", icon: Settings, count: null },
     ];
 
@@ -65,9 +80,9 @@ export default function Profile() {
             {/* Header */}
             <div className="bg-gradient-to-br from-orange-500 to-red-500 pt-8 pb-16 px-4 text-white text-center">
                 <div className="w-20 h-20 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center mx-auto mb-3 text-3xl font-black border-4 border-white/40 shadow-xl">
-                    {(user.full_name || user.email || "U")[0].toUpperCase()}
+                    {(user.name || user.email || "U")[0].toUpperCase()}
                 </div>
-                <h1 className="text-2xl font-black">{user.full_name || "Foodie"}</h1>
+                <h1 className="text-2xl font-black">{user.name || user.full_name || "Foodie"}</h1>
                 <p className="text-white/70 text-sm">{user.email}</p>
                 <div className="flex justify-center gap-8 mt-5 text-center">
                     <div>
@@ -142,6 +157,44 @@ export default function Profile() {
                                         </div>
                                     </div>
                                 </Link>
+                            ))
+                        )}
+                    </div>
+                )}
+
+                {activeTab === "favorites" && (
+                    <div className="space-y-4 pb-10">
+                        {favorites.length === 0 ? (
+                            <div className="text-center py-20 text-gray-400">
+                                <div className="text-5xl mb-3">❤️</div>
+                                <p className="font-semibold">No favorites yet</p>
+                                <Link to={createPageUrl("Restaurants")}>
+                                    <Button className="mt-4 bg-orange-500 hover:bg-orange-600 text-white rounded-2xl">Find Restaurants</Button>
+                                </Link>
+                            </div>
+                        ) : (
+                            favorites.map(fav => (
+                                <div key={fav.id} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-center justify-between">
+                                    <Link to={`${createPageUrl("RestaurantDetail")}?id=${fav.id}`} className="flex-1">
+                                        <div className="flex items-center gap-4">
+                                            {fav.image && <img src={fav.image} className="w-14 h-14 rounded-xl object-cover" alt="" />}
+                                            <div>
+                                                <h4 className="font-bold text-gray-900">{fav.name}</h4>
+                                                <p className="text-xs text-gray-400">{fav.cuisine || "Various Cuisines"}</p>
+                                            </div>
+                                        </div>
+                                    </Link>
+                                    <button 
+                                        onClick={() => {
+                                            const newFavs = favorites.filter(f => f.id !== fav.id);
+                                            setFavorites(newFavs);
+                                            localStorage.setItem("foodhub_favorites", JSON.stringify(newFavs));
+                                        }}
+                                        className="p-2.5 rounded-xl hover:bg-red-50 text-red-500 transition-colors"
+                                    >
+                                        <Trash2 className="w-5 h-5" />
+                                    </button>
+                                </div>
                             ))
                         )}
                     </div>

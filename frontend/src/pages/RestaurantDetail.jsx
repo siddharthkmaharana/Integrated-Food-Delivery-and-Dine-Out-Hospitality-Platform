@@ -29,6 +29,10 @@ export default function RestaurantDetail() {
         if (!restaurantId) return;
         const savedCart = JSON.parse(localStorage.getItem("foodhub_cart") || "[]");
         setCart(savedCart);
+
+        const savedFavorites = JSON.parse(localStorage.getItem("foodhub_favorites") || "[]");
+        setIsWishlisted(savedFavorites.some(f => f.id === restaurantId));
+
         api.auth.me().then(setUser).catch(() => { });
         Promise.all([
             api.restaurants.filter({ id: restaurantId }).catch(() => []),
@@ -125,12 +129,29 @@ export default function RestaurantDetail() {
                         </div>
                         <div className="flex gap-2">
                             <button
-                                onClick={() => setIsWishlisted(!isWishlisted)}
-                                className={`p-2.5 rounded-full backdrop-blur-sm transition-all ${isWishlisted ? "bg-red-500 text-white" : "bg-white/20 text-white"}`}
+                                onClick={() => {
+                                    const newStatus = !isWishlisted;
+                                    setIsWishlisted(newStatus);
+                                    let favs = JSON.parse(localStorage.getItem("foodhub_favorites") || "[]");
+                                    if (newStatus) {
+                                        if (!favs.find(f => f.id === restaurantId)) {
+                                            favs.push({
+                                                id: restaurantId,
+                                                name: restaurant.name,
+                                                image: restaurant.image,
+                                                cuisine: Array.isArray(restaurant.cuisine) ? restaurant.cuisine[0] : restaurant.cuisine
+                                            });
+                                        }
+                                    } else {
+                                        favs = favs.filter(f => f.id !== restaurantId);
+                                    }
+                                    localStorage.setItem("foodhub_favorites", JSON.stringify(favs));
+                                }}
+                                className={`p-2.5 rounded-full backdrop-blur-sm transition-all ${isWishlisted ? "bg-red-500 text-white shadow-lg shadow-red-200" : "bg-white/20 text-white hover:bg-white/30"}`}
                             >
                                 <Heart className={`w-5 h-5 ${isWishlisted ? "fill-white" : ""}`} />
                             </button>
-                            <button className="p-2.5 rounded-full bg-white/20 backdrop-blur-sm text-white">
+                            <button className="p-2.5 rounded-full bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 transition-colors">
                                 <Share2 className="w-5 h-5" />
                             </button>
                         </div>

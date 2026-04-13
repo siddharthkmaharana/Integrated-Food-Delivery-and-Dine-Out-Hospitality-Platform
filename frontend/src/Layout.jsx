@@ -166,17 +166,17 @@ export default function Layout({ children, currentPageName }) {
                                             <p className="text-xs text-orange-500 font-medium mt-0.5 capitalize">{user.role}</p>
                                         </div>
                                         <DropdownMenuItem asChild className="rounded-xl">
-                                            <Link to={createPageUrl("Profile")} className="flex items-center gap-2.5 px-3 py-2">
+                                            <Link to={`${createPageUrl("Profile")}?tab=profile`} className="flex items-center gap-2.5 px-3 py-2">
                                                 <User className="w-4 h-4 text-gray-400" /> My Profile
                                             </Link>
                                         </DropdownMenuItem>
                                         <DropdownMenuItem asChild className="rounded-xl">
-                                            <Link to={createPageUrl("Profile")} className="flex items-center gap-2.5 px-3 py-2">
+                                            <Link to={`${createPageUrl("Profile")}?tab=orders`} className="flex items-center gap-2.5 px-3 py-2">
                                                 <Package className="w-4 h-4 text-gray-400" /> My Orders
                                             </Link>
                                         </DropdownMenuItem>
                                         <DropdownMenuItem asChild className="rounded-xl">
-                                            <Link to={createPageUrl("Profile")} className="flex items-center gap-2.5 px-3 py-2">
+                                            <Link to={`${createPageUrl("Profile")}?tab=favorites`} className="flex items-center gap-2.5 px-3 py-2">
                                                 <Heart className="w-4 h-4 text-gray-400" /> Favorites
                                             </Link>
                                         </DropdownMenuItem>
