@@ -2,7 +2,7 @@ import axios from "axios";
 import { io } from "socket.io-client";
 
 export const apiClient = axios.create({
-  baseURL: "http://localhost:5000/api",
+  baseURL: import.meta.env.VITE_API_URL || "http://localhost:5000/api",
 });
 
 apiClient.interceptors.request.use((config) => {
