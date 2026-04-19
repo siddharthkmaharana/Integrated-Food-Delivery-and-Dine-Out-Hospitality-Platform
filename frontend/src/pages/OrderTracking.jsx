@@ -15,7 +15,14 @@ const ORDER_STEPS = [
     { status: "DELIVERED", label: "Delivered", icon: CheckCircle2, desc: "Enjoy your meal! 🎉" },
 ];
 
-const STATUS_INDEX = { PENDING: 0, PLACED: 0, ACCEPTED: 1, PREPARING: 2, COURIER_ASSIGNED: 3, DELIVERING: 4, DELIVERED: 5 };
+const STATUS_INDEX = { 
+    PENDING: 0, PLACED: 0, placed: 0, 
+    ACCEPTED: 1, confirmed: 1, CONFIRMED: 1,
+    PREPARING: 2, preparing: 2, 
+    COURIER_ASSIGNED: 3, picked_up: 3, PICKED_UP: 3,
+    DELIVERING: 4, out_for_delivery: 4, OUT_FOR_DELIVERY: 4,
+    DELIVERED: 5, delivered: 5 
+};
 
 export default function OrderTracking() {
     const urlParams = new URLSearchParams(window.location.search);
@@ -53,8 +60,8 @@ export default function OrderTracking() {
     );
 
     const currentStep = STATUS_INDEX[order.status] ?? 0;
-    const isDelivered = order.status === "DELIVERED";
-    const isCancelled = order.status === "CANCELLED";
+    const isDelivered = order.status === "DELIVERED" || order.status === "delivered";
+    const isCancelled = order.status === "CANCELLED" || order.status === "cancelled";
 
     return (
         <div className="min-h-screen bg-gray-50">
