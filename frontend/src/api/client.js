@@ -5,6 +5,11 @@ export const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_URL || "http://localhost:5000/api",
 });
 
+const getSocketUrl = () => {
+  const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+  return apiUrl.endsWith("/api") ? apiUrl.slice(0, -4) : apiUrl;
+};
+
 apiClient.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
 
@@ -151,7 +156,7 @@ export const api = {
       return data;
     },
     subscribeOrder: (orderId, cb) => {
-      const socket = io("http://localhost:5000");
+      const socket = io(getSocketUrl() || "/");
       socket.emit("join_order", orderId);
       socket.on("order_update", cb);
       return () => {
@@ -160,7 +165,7 @@ export const api = {
       };
     },
     subscribeRestaurant: (restaurantId, onNewOrder, onUpdate) => {
-      const socket = io("http://localhost:5000");
+      const socket = io(getSocketUrl() || "/");
       socket.emit("join_restaurant", restaurantId);
       if (onNewOrder) socket.on("new_order", onNewOrder);
       if (onUpdate) socket.on("order_update", onUpdate);
@@ -171,7 +176,7 @@ export const api = {
       };
     },
     subscribeAdmin: (onNewOrder, onUpdate) => {
-      const socket = io("http://localhost:5000");
+      const socket = io(getSocketUrl() || "/");
       // Admins just listen to broadcasts if we broadcast, or we can listen to all
       if (onNewOrder) socket.on("new_order", onNewOrder);
       if (onUpdate) socket.on("order_update", onUpdate);
