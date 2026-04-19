@@ -21,6 +21,8 @@ const CATEGORIES = [
   { name: "Mexican", icon: "🌮" },
 ];
 
+import { api } from "@/api/client";
+
 export default function Home() {
   const [restaurants, setRestaurants] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -28,10 +30,9 @@ export default function Home() {
   const [selectedCategory, setSelectedCategory] = useState("All");
 
   useEffect(() => {
-    fetch('http://localhost:5000/api/restaurants')
-      .then(res => res.json())
+    api.restaurants.list()
       .then(data => {
-        setRestaurants(data || []);
+        setRestaurants(data.data || data || []);
         setLoading(false);
       })
       .catch((err) => {
