@@ -2,12 +2,15 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "http://<YOUR_EC2_IP>:5000/api/$1"
+      "destination": "http://13.61.32.221:5000/api/$1"
     },
     {
       "source": "/socket.io/(.*)",
-      "destination": "http://<YOUR_EC2_IP>:5000/socket.io/$1"
+      "destination": "http://13.61.32.221:5000/socket.io/$1"
     },
-    { "source": "/(.*)", "destination": "/index.html" }
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
   ]
 }
