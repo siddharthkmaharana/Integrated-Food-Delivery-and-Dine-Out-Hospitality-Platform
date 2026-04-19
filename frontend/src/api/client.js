@@ -156,7 +156,7 @@ export const api = {
       return data;
     },
     subscribeOrder: (orderId, cb) => {
-      const socket = io(getSocketUrl() || "/");
+      const socket = io(getSocketUrl() || "/", { transports: ['polling'] });
       socket.emit("join_order", orderId);
       socket.on("order_update", cb);
       return () => {
@@ -165,7 +165,7 @@ export const api = {
       };
     },
     subscribeRestaurant: (restaurantId, onNewOrder, onUpdate) => {
-      const socket = io(getSocketUrl() || "/");
+      const socket = io(getSocketUrl() || "/", { transports: ['polling'] });
       socket.emit("join_restaurant", restaurantId);
       if (onNewOrder) socket.on("new_order", onNewOrder);
       if (onUpdate) socket.on("order_update", onUpdate);
@@ -176,7 +176,7 @@ export const api = {
       };
     },
     subscribeAdmin: (onNewOrder, onUpdate) => {
-      const socket = io(getSocketUrl() || "/");
+      const socket = io(getSocketUrl() || "/", { transports: ['polling'] });
       // Admins just listen to broadcasts if we broadcast, or we can listen to all
       if (onNewOrder) socket.on("new_order", onNewOrder);
       if (onUpdate) socket.on("order_update", onUpdate);
