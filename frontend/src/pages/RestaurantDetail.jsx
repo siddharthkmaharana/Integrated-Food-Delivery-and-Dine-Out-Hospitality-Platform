@@ -19,7 +19,7 @@ export default function RestaurantDetail() {
     const [reviews, setReviews] = useState([]);
     const [cart, setCart] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState("menu");
+    const [activeTab, setActiveTab] = useState(orderId ? "reviews" : "menu");
     const [isWishlisted, setIsWishlisted] = useState(false);
     const [newReview, setNewReview] = useState({ rating: 5, comment: "" });
     const [user, setUser] = useState(null);

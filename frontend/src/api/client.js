@@ -204,6 +204,11 @@ export const api = {
     create: async (payload) => {
       const { data } = await apiClient.post("/reviews", payload);
       return data;
+    },
+
+    getSuggestions: async (orderId) => {
+      const { data } = await apiClient.get(`/reviews/suggestions/${orderId}`);
+      return data;
     }
   },
 
