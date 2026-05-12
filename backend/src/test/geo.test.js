@@ -33,7 +33,9 @@ describe('Geospatial Query Tests', () => {
     expect(has2dsphere).toBe(true);
   }, 15000);
 
-  // ✅ Test 2 — explain() confirms geo index query works
+  // ✅ Test 2 — explain() confirms geo index query works (Project 2 Week 4 requirement)
+  // The PDF mandates using explain() to guarantee that 2dsphere indexes are correctly
+  // utilized and full-collection scans (COLLSCAN) are ELIMINATED.
   test('$geoNear query should use 2dsphere index successfully', async () => {
     const explained = await Restaurant.collection
       .aggregate([
@@ -53,6 +55,48 @@ describe('Geospatial Query Tests', () => {
     console.log('✅ Geo query explain completed successfully');
     console.log('Explain output keys:', Object.keys(explained));
   }, 15000);
+
+  // ✅ Test 6 — Verify 2dsphere index is USED, COLLSCAN is ABSENT
+  // Project 2 Week 4: "MongoDB queries must be aggressively optimized using explain()
+  // execution plans to guarantee that 2dsphere indexes are correctly utilized and
+  // full-collection scans are eliminated."
+  test('explain() should confirm 2dsphere index is used — no full collection scan', async () => {
+    const explained = await Restaurant.collection
+      .find({
+        location: {
+          $near: {
+            $geometry: { type: 'Point', coordinates: [77.5946, 12.9716] },
+            $maxDistance: 20000
+          }
+        }
+      })
+      .explain('executionStats');
+
+    const stats = explained.executionStats;
+    console.log('\n📊 Query Execution Plan Analysis:');
+    console.log(`  • Total docs examined : ${stats?.totalDocsExamined ?? 'N/A'}`);
+    console.log(`  • Total keys examined : ${stats?.totalKeysExamined ?? 'N/A'}`);
+    console.log(`  • Execution time (ms) : ${stats?.executionTimeMillis ?? 'N/A'}`);
+    console.log(`  • Winning plan stage  : ${stats?.executionStages?.stage ?? 'N/A'}`);
+
+    // Confirm explained output is structured
+    expect(explained).toHaveProperty('queryPlanner');
+
+    // The winning plan should NOT be COLLSCAN
+    const winningPlanStage = explained?.queryPlanner?.winningPlan?.stage ||
+                             explained?.queryPlanner?.winningPlan?.inputStage?.stage || '';
+
+    console.log(`  • Winning plan stage  : ${winningPlanStage}`);
+    expect(winningPlanStage).not.toBe('COLLSCAN');
+
+    // Keys examined should be > 0 when 2dsphere index is used (on non-empty collection)
+    if (stats?.totalDocsExamined > 0) {
+      expect(stats.totalKeysExamined).toBeGreaterThan(0);
+    }
+
+    console.log('✅ 2dsphere index confirmed active — no full collection scan detected');
+  }, 20000);
+
 
   // ✅ Test 3 — sorted by distance
   test('Geo search should return restaurants sorted by distance', async () => {

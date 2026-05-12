@@ -8,6 +8,35 @@ import ReviewCard from "../components/restaurant/ReviewCard";
 import MenuSection from "../components/restaurant/MenuSection";
 import { api } from "@/api/client";
 
+// ── Time-based Open/Closed logic ─────────────────────────────────────────────
+// Restaurants are open 8:00 AM – 11:00 PM every day (IST)
+const OPEN_HOUR  = 8;   // 8:00 AM
+const CLOSE_HOUR = 23;  // 11:00 PM
+
+function isRestaurantOpen() {
+  const now = new Date();
+  
+  // Use Intl to get the hour and minute in IST reliably
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Asia/Kolkata',
+    hour: 'numeric',
+    minute: 'numeric',
+    hour12: false
+  });
+  
+  const parts = formatter.formatToParts(now);
+  const hourString = parts.find(p => p.type === 'hour').value;
+  const minuteString = parts.find(p => p.type === 'minute').value;
+  
+  const hour = parseInt(hourString, 10);
+  const minute = parseInt(minuteString, 10);
+
+  // Open from 08:00 to 22:59 (closes at 23:00 / 11 PM)
+  if (hour < OPEN_HOUR) return false;
+  if (hour >= CLOSE_HOUR) return false; // At 23:00 and above, it's closed
+  return true;
+}
+
 export default function RestaurantDetail() {
     const navigate = useNavigate();
     const urlParams = new URLSearchParams(window.location.search);
@@ -17,9 +46,10 @@ export default function RestaurantDetail() {
     const [restaurant, setRestaurant] = useState(null);
     const [menuItems, setMenuItems] = useState([]);
     const [reviews, setReviews] = useState([]);
+    const [events, setEvents] = useState([]);
     const [cart, setCart] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState("menu");
+    const [activeTab, setActiveTab] = useState(orderId ? "reviews" : "menu");
     const [isWishlisted, setIsWishlisted] = useState(false);
     const [newReview, setNewReview] = useState({ rating: 5, comment: "" });
     const [user, setUser] = useState(null);
@@ -35,14 +65,16 @@ export default function RestaurantDetail() {
 
         api.auth.me().then(setUser).catch(() => { });
         Promise.all([
-            api.restaurants.filter({ id: restaurantId }).catch(() => []),
+            api.restaurants.getById(restaurantId).catch(() => null),
             api.menuItems.filter({ restaurant_id: restaurantId }).catch(() => []),
             api.reviews.filter({ restaurant_id: restaurantId }).catch(() => []),
+            api.events.list({ restaurantId }).catch(() => []),
             orderId ? api.reviews.getSuggestions(orderId).catch(() => null) : Promise.resolve(null)
-        ]).then(([rests, items, revs, suggs]) => {
-            setRestaurant(rests[0] || null);
-            setMenuItems(items);
-            setReviews(revs);
+        ]).then(([restResp, items, revs, evts, suggs]) => {
+            setRestaurant(restResp?.data || restResp || null);
+            setMenuItems(items?.data || items || []);
+            setReviews(revs?.data || revs || []);
+            setEvents(Array.isArray(evts) ? evts : evts?.data || []);
             if (suggs) setSuggestions(suggs);
             setLoading(false);
         });
@@ -84,23 +116,33 @@ export default function RestaurantDetail() {
 
     const submitReview = async () => {
         if (!user) { api.auth.redirectToLogin(); return; }
-        await api.reviews.create({
-            restaurant: restaurantId,
-            order: orderId,
-            rating: newReview.rating,
-            reviewText: newReview.comment,
-        });
-        const revs = await api.reviews.filter({ restaurant_id: restaurantId });
-        setReviews(revs);
-        setNewReview({ rating: 5, comment: "" });
+        if (!newReview.comment.trim()) { alert("Please write a review first."); return; }
+        
+        try {
+            const res = await api.reviews.create({
+                restaurant: restaurantId,
+                order: orderId,
+                rating: newReview.rating,
+                reviewText: newReview.comment,
+            });
+            
+            if (res.message) alert(res.message);
+            const revs = await api.reviews.filter({ restaurant_id: restaurantId });
+            setReviews(revs);
+            setNewReview({ rating: 5, comment: "" });
+            setSuggestions(null); // Clear suggestions after use
+        } catch (err) {
+            console.error("Review error:", err.response?.data || err.message);
+            alert(err.response?.data?.message || "Failed to submit review. Make sure you have ordered and received food from this restaurant.");
+        }
     };
 
-    const grouped = menuItems.reduce((acc, item) => {
+    const grouped = Array.isArray(menuItems) ? menuItems.reduce((acc, item) => {
         const cat = item.category || "Uncategorized";
         if (!acc[cat]) acc[cat] = [];
         acc[cat].push(item);
         return acc;
-    }, {});
+    }, {}) : {};
 
     if (loading) return (
         <div className="min-h-screen flex items-center justify-center">
@@ -151,7 +193,21 @@ export default function RestaurantDetail() {
                             >
                                 <Heart className={`w-5 h-5 ${isWishlisted ? "fill-white" : ""}`} />
                             </button>
-                            <button className="p-2.5 rounded-full bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 transition-colors">
+                            <button
+                                onClick={() => {
+                                    if (navigator.share) {
+                                        navigator.share({
+                                            title: restaurant.name,
+                                            text: `Check out ${restaurant.name} on FoodHub!`,
+                                            url: window.location.href,
+                                        }).catch(() => {});
+                                    } else {
+                                        navigator.clipboard.writeText(window.location.href);
+                                        alert("Link copied to clipboard!");
+                                    }
+                                }}
+                                className="p-2.5 rounded-full bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 transition-all"
+                            >
                                 <Share2 className="w-5 h-5" />
                             </button>
                         </div>
@@ -165,7 +221,7 @@ export default function RestaurantDetail() {
                     <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
                         <div className="flex items-center gap-1.5">
                             <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
-                            <span className="font-bold">{restaurant.rating?.toFixed(1)}</span>
+                            <span className="font-bold">{Number(restaurant.rating || 0).toFixed(1)}</span>
                             <span className="text-gray-400">({reviews.length} reviews)</span>
                         </div>
                         <div className="flex items-center gap-1.5 text-gray-600">
@@ -181,8 +237,8 @@ export default function RestaurantDetail() {
                             <span>{restaurant.address || restaurant.city}</span>
                         </div>
                         <div className="flex items-center gap-1.5 text-gray-500">
-                            <span className={`w-2 h-2 rounded-full ${restaurant.is_open ? "bg-green-500" : "bg-gray-400"}`} />
-                            <span className="font-medium">{restaurant.is_open ? "Open" : "Closed"} · {restaurant.opening_hours}</span>
+                            <span className={`w-2 h-2 rounded-full ${isRestaurantOpen() ? "bg-green-500" : "bg-gray-400"}`} />
+                            <span className="font-medium">{isRestaurantOpen() ? "Open" : "Closed"} · {restaurant.opening_hours || "8:00 AM - 11:00 PM"}</span>
                         </div>
                     </div>
                 </div>
@@ -192,14 +248,14 @@ export default function RestaurantDetail() {
             <div className="bg-white sticky top-16 z-30 border-b border-gray-100">
                 <div className="max-w-5xl mx-auto px-4 sm:px-6">
                     <div className="flex gap-1">
-                        {["menu", "reviews", "info"].map(tab => (
+                        {["menu", "events", "reviews", "info"].map(tab => (
                             <button
                                 key={tab}
                                 onClick={() => setActiveTab(tab)}
                                 className={`px-5 py-3.5 text-sm font-bold capitalize transition-colors border-b-2 ${activeTab === tab ? "border-orange-500 text-orange-500" : "border-transparent text-gray-500 hover:text-gray-800"
                                     }`}
                             >
-                                {tab} {tab === "reviews" && `(${reviews.length})`}
+                                {tab} {tab === "reviews" && `(${reviews.length})`} {tab === "events" && events.length > 0 && `(${events.length})`}
                             </button>
                         ))}
                     </div>
@@ -225,26 +281,33 @@ export default function RestaurantDetail() {
                     <div className="space-y-6">
                         {/* Add Review */}
                         <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-                            <h3 className="font-bold text-gray-900 mb-4">Write a Review</h3>
-                            <div className="flex gap-2 mb-4">
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="font-bold text-gray-900">Write a Review</h3>
+                                <div className="flex items-center gap-1.5 text-[10px] font-black text-orange-600 bg-orange-50 px-2.5 py-1 rounded-full uppercase tracking-wider">
+                                    <span>🎁 Earn up to 50 Pts</span>
+                                </div>
+                            </div>
+                            <div className="flex gap-2 mb-5">
                                 {[1, 2, 3, 4, 5].map(s => (
                                     <button key={s} onClick={() => setNewReview(r => ({ ...r, rating: s }))}
-                                        className={`text-2xl transition-transform hover:scale-110 ${s <= newReview.rating ? "opacity-100" : "opacity-30"}`}>⭐</button>
+                                        className={`text-2xl transition-transform hover:scale-125 ${s <= newReview.rating ? "filter-none grayscale-0" : "filter grayscale opacity-30"}`}>⭐</button>
                                 ))}
                             </div>
                             
                             {suggestions && (
-                                <div className="mb-4">
-                                    <p className="text-xs text-orange-600 font-bold mb-2 flex items-center gap-1">✨ AI Suggestions</p>
+                                <div className="mb-5 animate-in fade-in slide-in-from-top-2 duration-500">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <p className="text-xs text-orange-600 font-bold flex items-center gap-1.5">✨ AI Smart Tags</p>
+                                        <p className="text-[10px] text-gray-400 font-medium">Click to add</p>
+                                    </div>
                                     <div className="flex flex-wrap gap-2">
                                         {suggestions.suggestions.map((s, i) => (
                                             <button key={i} onClick={() => setNewReview(r => ({ ...r, comment: r.comment + (r.comment ? " " : "") + s }))} 
-                                                className="text-xs bg-orange-50 hover:bg-orange-100 text-orange-700 font-medium px-2.5 py-1.5 rounded-lg border border-orange-200 transition-colors">
-                                                +{s}
+                                                className="text-xs bg-white hover:bg-orange-500 hover:text-white text-gray-600 font-bold px-3 py-1.5 rounded-xl border border-gray-100 hover:border-orange-500 transition-all shadow-sm">
+                                                {s}
                                             </button>
                                         ))}
                                     </div>
-                                    <p className="text-[10px] text-gray-400 mt-1.5">{suggestions.tip}</p>
                                 </div>
                             )}
 
@@ -266,6 +329,47 @@ export default function RestaurantDetail() {
                             </div>
                         ) : (
                             reviews.map(review => <ReviewCard key={review.id} review={review} />)
+                        )}
+                    </div>
+                )}
+
+                {activeTab === "events" && (
+                    <div className="space-y-6">
+                        {events.length === 0 ? (
+                            <div className="text-center py-16 bg-white rounded-2xl border border-gray-100">
+                                <div className="text-5xl mb-3">📅</div>
+                                <p className="font-bold text-gray-900">No upcoming events</p>
+                                <p className="text-gray-500 text-sm">Stay tuned for food festivals and live music!</p>
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {events.map(event => (
+                                    <div key={event._id} className="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm flex flex-col">
+                                        <div className="h-40 relative">
+                                            <img src={event.image || "https://images.unsplash.com/photo-1514525253361-bee8718a7439?auto=format&fit=crop&q=80&w=400"} className="w-full h-full object-cover" alt="" />
+                                            <div className="absolute top-3 left-3">
+                                                <Badge className="bg-orange-500 text-white border-none text-[10px] uppercase font-black px-2 py-0.5">{event.type}</Badge>
+                                            </div>
+                                        </div>
+                                        <div className="p-4 flex-1 flex flex-col">
+                                            <h4 className="font-black text-gray-900 mb-1">{event.title}</h4>
+                                            <p className="text-xs text-gray-500 line-clamp-2 mb-4 flex-1">{event.description}</p>
+                                            <div className="flex items-center justify-between mt-auto pt-3 border-t border-gray-50">
+                                                <div className="text-[10px] font-bold text-gray-400">
+                                                    <p>{event.date && format(new Date(event.date), "MMM d, yyyy")}</p>
+                                                    <p>{event.startTime} - {event.endTime}</p>
+                                                </div>
+                                                <Button 
+                                                    onClick={() => api.events.rsvp(event._id).then(() => api.events.list({ restaurantId }).then(setEvents))}
+                                                    className="h-8 rounded-lg bg-orange-500 text-white text-[10px] font-black px-4"
+                                                >
+                                                    RSVP NOW
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
                         )}
                     </div>
                 )}

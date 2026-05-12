@@ -5,14 +5,20 @@ const userSchema = mongoose.Schema({
   name: { type: String, required: true, trim: true },
   email: { type: String, required: true, unique: true, lowercase: true },
   password: { type: String, required: true, minlength: 6 },
-  role: { type: String, enum: ["customer", "restaurant", "courier"], default: "customer" },
-  loyaltypoints: { type: Number, default: 0 },
+  role: { type: String, enum: ["customer", "restaurant", "courier", "admin"], default: "customer" },
+  loyaltyPoints: { type: Number, default: 0 },
+  phoneNumber: { type: String, default: "" },
+  address: {
+    street: { type: String, default: "" },
+    city: { type: String, default: "" },
+    pincode: { type: String, default: "" }
+  },
 
   location: {
     type: { type: String, enum: ["Point"], default: "Point" },
     coordinates: { type: [Number], default: [0, 0] } // longitude, latitude
-  }
-
+  },
+  isOnline: { type: Boolean, default: false }
 }, { timestamps: true });
 
 

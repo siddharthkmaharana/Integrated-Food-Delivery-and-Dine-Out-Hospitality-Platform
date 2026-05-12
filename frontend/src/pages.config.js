@@ -59,6 +59,7 @@ import AdminDashboard from './pages/AdminDashboard';
 import RestaurantDashboard from './pages/RestaurantDashboard';
 import CourierDashboard from './pages/CourierDashboard';
 import Login from './pages/Login';
+import Events from './pages/Events';
 import __Layout from './Layout.jsx';
 
 
@@ -75,6 +76,7 @@ export const PAGES = {
     "RestaurantDashboard": RestaurantDashboard,
     "CourierDashboard": CourierDashboard,
     "login": Login,
+    "Events": Events,
 }
 
 export const pagesConfig = {

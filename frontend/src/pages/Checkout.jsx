@@ -16,6 +16,7 @@ export default function Checkout() {
     address: "",
     city: "",
     pincode: "",
+    phoneNumber: "",
     instructions: "",
     payment: "cash",
   });
@@ -29,6 +30,14 @@ export default function Checkout() {
         api.auth.redirectToLogin();
       } else {
         setUser(u);
+        // Pre-fill from user profile
+        setForm(f => ({
+          ...f,
+          address: u.address?.street || f.address,
+          city: u.address?.city || f.city,
+          pincode: u.address?.pincode || f.pincode,
+          phoneNumber: u.phoneNumber || f.phoneNumber
+        }));
       }
     }).catch(() => api.auth.redirectToLogin());
   }, []);
@@ -45,6 +54,12 @@ export default function Checkout() {
       restaurantId: cart[0].restaurant_id,
       items: cart.map(i => ({ menuItemId: i.id, quantity: i.quantity })),
       deliveryAddress: `${form.address}, ${form.city} ${form.pincode}`,
+      phoneNumber: form.phoneNumber,
+      addressComponents: {
+        street: form.address,
+        city: form.city,
+        pincode: form.pincode
+      }
     });
 
     if (form.payment !== 'cash') {
@@ -136,6 +151,15 @@ export default function Checkout() {
                     </div>
                   </div>
                   <div>
+                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wide block mb-1.5">Phone Number *</label>
+                    <Input
+                      placeholder="Enter 10-digit mobile number"
+                      value={form.phoneNumber}
+                      onChange={e => setForm(f => ({ ...f, phoneNumber: e.target.value }))}
+                      className="rounded-xl border-gray-200 h-11"
+                    />
+                  </div>
+                  <div>
                     <label className="text-xs font-bold text-gray-500 uppercase tracking-wide block mb-1.5">Delivery Instructions</label>
                     <textarea
                       placeholder="Leave at door, ring bell, etc."
@@ -146,7 +170,7 @@ export default function Checkout() {
                   </div>
                   <Button
                     onClick={() => setStep(2)}
-                    disabled={!form.address || !form.city}
+                    disabled={!form.address || !form.city || !form.phoneNumber}
                     className="w-full bg-orange-500 hover:bg-orange-600 text-white rounded-xl h-12 font-bold"
                   >
                     Continue to Payment <ChevronRight className="w-4 h-4 ml-1" />

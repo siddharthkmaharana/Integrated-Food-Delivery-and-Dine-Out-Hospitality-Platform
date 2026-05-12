@@ -31,6 +31,16 @@ const socketHandler = (io) => {
       console.log(`Order ${orderId} updated to: ${status}`);
     });
 
+    // Live GPS tracking
+    socket.on('update_location', (data) => {
+      const { orderId, coordinates } = data; // coordinates: { lat, lng }
+      io.to(orderId).emit('location_update', {
+        orderId,
+        coordinates,
+        timestamp: new Date()
+      });
+    });
+
     socket.on('disconnect', () => {
       console.log(` Client disconnected: ${socket.id}`);
     });

@@ -16,11 +16,14 @@ const orderSchema = new mongoose.Schema({
     totalAmount:{type:Number, required:true},
     status:{
         type:String,
-        enum:['PENDING','PLACED','ACCEPTED','PREPARING','COURIER_ASSIGNED','DELIVERING','DELIVERED','CANCELLED'],
+        enum:['PENDING','PLACED','ACCEPTED','PREPARING','READY_FOR_PICKUP','COURIER_ASSIGNED','DELIVERING','DELIVERED','CANCELLED'],
         default:'PENDING'
     },
+    courier: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    rejectedBy: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     paymentStatus:{type:String,enum: ['PENDING','PAID','FAILED'], default:'PENDING'},
     deliveryAddress:{type:String ,required:true},
+    phoneNumber: { type: String, required: true },
     review:{
         Text:{type:String, default:''},
         points:{type:Number,default:0},

@@ -8,13 +8,13 @@ import { Input } from "@/components/ui/input";
 import { format } from "date-fns";
 
 const STATUS_COLORS = {
-    placed: "bg-blue-100 text-blue-600",
-    confirmed: "bg-indigo-100 text-indigo-600",
-    preparing: "bg-yellow-100 text-yellow-700",
-    picked_up: "bg-orange-100 text-orange-600",
-    out_for_delivery: "bg-purple-100 text-purple-600",
-    delivered: "bg-green-100 text-green-600",
-    cancelled: "bg-red-100 text-red-600",
+    PLACED: "bg-blue-100 text-blue-600",
+    CONFIRMED: "bg-indigo-100 text-indigo-600",
+    PREPARING: "bg-yellow-100 text-yellow-700",
+    PICKED_UP: "bg-orange-100 text-orange-600",
+    OUT_FOR_DELIVERY: "bg-purple-100 text-purple-600",
+    DELIVERED: "bg-green-100 text-green-600",
+    CANCELLED: "bg-red-100 text-red-600",
 };
 
 export default function Profile() {
@@ -23,7 +23,7 @@ export default function Profile() {
     const [reservations, setReservations] = useState([]);
     const [favorites, setFavorites] = useState([]);
     const location = useLocation();
-    
+
     // Set initial tab from URL query param if present
     const queryTab = new URLSearchParams(location.search).get("tab");
     const [activeTab, setActiveTab] = useState(queryTab || "orders");
@@ -39,7 +39,7 @@ export default function Profile() {
     useEffect(() => {
         const storedFavorites = JSON.parse(localStorage.getItem("foodhub_favorites") || "[]");
         setFavorites(storedFavorites);
-        
+
         api.auth.me().then(u => {
             if (!u) { api.auth.redirectToLogin(); return; }
             setUser(u);
@@ -56,8 +56,8 @@ export default function Profile() {
     }, []);
 
     const saveProfile = async () => {
-        await api.auth.updateMe({ full_name: editName });
-        setUser(u => ({ ...u, full_name: editName }));
+        await api.auth.updateProfile({ name: editName });
+        setUser(u => ({ ...u, name: editName }));
         setEditMode(false);
     };
 
@@ -87,17 +87,17 @@ export default function Profile() {
                 <div className="flex justify-center gap-8 mt-5 text-center">
                     <div>
                         <div className="text-2xl font-black">{orders.length}</div>
-                        <div className="text-xs text-white/70">Orders</div>
+                        <div className="text-xs text-white/70 uppercase tracking-widest font-bold">Orders</div>
                     </div>
                     <div className="w-px bg-white/20" />
                     <div>
-                        <div className="text-2xl font-black">{reservations.length}</div>
-                        <div className="text-xs text-white/70">Bookings</div>
+                        <div className="text-2xl font-black">₹{orders.filter(o => o.status === "DELIVERED").reduce((sum, o) => sum + (o.totalAmount || o.total || 0), 0).toFixed(2)}</div>
+                        <div className="text-xs text-white/70 uppercase tracking-widest font-bold">Spent</div>
                     </div>
                     <div className="w-px bg-white/20" />
-                    <div>
-                        <div className="text-2xl font-black">{orders.filter(o => o.status === "delivered").length}</div>
-                        <div className="text-xs text-white/70">Delivered</div>
+                    <div className="animate-bounce-slow">
+                        <div className="text-2xl font-black text-yellow-300">✨ {user.loyaltyPoints || 0}</div>
+                        <div className="text-xs text-white/70 uppercase tracking-widest font-bold">Points</div>
                     </div>
                 </div>
             </div>
@@ -135,13 +135,13 @@ export default function Profile() {
                             </div>
                         ) : (
                             orders.map(order => (
-                                <Link key={order.id} to={`${createPageUrl("OrderTracking")}?id=${order.id}`}>
+                                <Link key={order._id || order.id} to={`${createPageUrl("OrderTracking")}?id=${order._id || order.id}`}>
                                     <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
                                         <div className="flex items-start justify-between mb-3">
                                             <div>
-                                                <h4 className="font-bold text-gray-900">{order.restaurant_name}</h4>
+                                                <h4 className="font-bold text-gray-900">{order.restaurantName || order.restaurant?.name || "FoodHub Restaurant"}</h4>
                                                 <p className="text-xs text-gray-400 mt-0.5">
-                                                    {order.created_date ? format(new Date(order.created_date), "MMM d, yyyy 'at' h:mm a") : ""}
+                                                    {order.createdAt ? format(new Date(order.createdAt), "MMM d, yyyy 'at' h:mm a") : ""}
                                                 </p>
                                             </div>
                                             <span className={`text-xs font-bold px-2.5 py-1 rounded-full capitalize ${STATUS_COLORS[order.status] || "bg-gray-100 text-gray-600"}`}>
@@ -152,7 +152,7 @@ export default function Profile() {
                                             {order.items?.map(i => i.name).join(", ")}
                                         </p>
                                         <div className="flex items-center justify-between">
-                                            <span className="font-black text-gray-900">₹{order.total?.toFixed(2)}</span>
+                                            <span className="font-black text-gray-900">₹{(order.totalAmount || order.total || 0).toFixed(2)}</span>
                                             <ChevronRight className="w-4 h-4 text-gray-400" />
                                         </div>
                                     </div>
@@ -215,8 +215,8 @@ export default function Profile() {
                                 <div key={res.id} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
                                     <div className="flex items-start justify-between mb-3">
                                         <h4 className="font-bold text-gray-900">{res.restaurant_name}</h4>
-                                        <span className={`text-xs font-bold px-2.5 py-1 rounded-full capitalize ${res.status === "confirmed" ? "bg-green-100 text-green-600" :
-                                                res.status === "cancelled" ? "bg-red-100 text-red-600" : "bg-yellow-100 text-yellow-700"
+                                        <span className={`text-xs font-bold px-2.5 py-1 rounded-full capitalize ${res.status === "CONFIRMED" ? "bg-green-100 text-green-600" :
+                                                res.status === "CANCELLED" ? "bg-red-100 text-red-600" : "bg-yellow-100 text-yellow-700"
                                             }`}>{res.status}</span>
                                     </div>
                                     <div className="flex gap-4 text-sm text-gray-500">
@@ -248,7 +248,7 @@ export default function Profile() {
                                 {editMode ? (
                                     <Input value={editName} onChange={e => setEditName(e.target.value)} className="rounded-xl border-gray-200 h-11" />
                                 ) : (
-                                    <p className="font-semibold text-gray-800 py-2">{user.full_name || "Not set"}</p>
+                                    <p className="font-semibold text-gray-800 py-2">{user.name || user.full_name || "Not set"}</p>
                                 )}
                             </div>
                             <div>
@@ -269,6 +269,6 @@ export default function Profile() {
                     </div>
                 )}
             </div>
-        </div>
+        </div >
     );
 }

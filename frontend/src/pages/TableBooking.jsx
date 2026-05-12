@@ -4,8 +4,42 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { format, addDays } from "date-fns";
 import { api } from "@/api/client";
+import { useLocation } from "@/lib/LocationContext";
 
-const TIME_SLOTS = ["12:00 PM", "12:30 PM", "1:00 PM", "1:30 PM", "2:00 PM", "6:00 PM", "6:30 PM", "7:00 PM", "7:30 PM", "8:00 PM", "8:30 PM", "9:00 PM"];
+const TIME_SLOTS = [
+    "8:00 AM", "8:30 AM", "9:00 AM", "9:30 AM", "10:00 AM", "10:30 AM", "11:00 AM", "11:30 AM",
+    "12:00 PM", "12:30 PM", "1:00 PM", "1:30 PM", "2:00 PM", "2:30 PM", "3:00 PM", "3:30 PM",
+    "4:00 PM", "4:30 PM", "5:00 PM", "5:30 PM", "6:00 PM", "6:30 PM", "7:00 PM", "7:30 PM",
+    "8:00 PM", "8:30 PM", "9:00 PM", "9:30 PM", "10:00 PM", "10:30 PM", "11:00 PM"
+];
+
+// ── Time-based Open/Closed logic ─────────────────────────────────────────────
+const OPEN_HOUR = 8;   // 8:00 AM
+const CLOSE_HOUR = 23;  // 11:00 PM
+
+function isRestaurantOpen() {
+    const now = new Date();
+    const formatter = new Intl.DateTimeFormat('en-US', {
+        timeZone: 'Asia/Kolkata',
+        hour: 'numeric',
+        minute: 'numeric',
+        hour12: false
+    });
+    const parts = formatter.formatToParts(now);
+    const hour = parseInt(parts.find(p => p.type === 'hour').value, 10);
+    return hour >= OPEN_HOUR && hour < CLOSE_HOUR;
+}
+
+const priceRangeMap = {
+    "₹": "Under ₹150",
+    "₹₹": "₹150–300",
+    "₹₹₹": "₹300–600",
+    "₹₹₹₹": "Over ₹600",
+    "$": "Under ₹150",
+    "$$": "₹150–300",
+    "$$$": "₹300–600",
+    "$$$$": "Over ₹600",
+};
 
 export default function TableBooking() {
     const [restaurants, setRestaurants] = useState([]);
@@ -15,6 +49,7 @@ export default function TableBooking() {
     const [bookings, setBookings] = useState([]);
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(null);
+    const { coords } = useLocation();
     const [form, setForm] = useState({
         date: format(addDays(new Date(), 1), "yyyy-MM-dd"),
         time: "",
@@ -23,13 +58,17 @@ export default function TableBooking() {
     });
 
     useEffect(() => {
-        api.restaurants.list("-rating", 20)
+        setLoading(true);
+        // Match Home page logic: fetch based on current coordinates only
+        api.restaurants.list(coords)
             .then(data => {
-                if(Array.isArray(data)) setRestaurants(data.filter(r => r.is_approved !== false));
+                const list = data.data || data || [];
+                setRestaurants(list.filter(r => r.is_approved !== false));
             })
-            .catch(console.error);
+            .catch(console.error)
+            .finally(() => setLoading(false));
         api.auth.me().then(setUser).catch(() => { });
-    }, []);
+    }, [coords]);
 
     useEffect(() => {
         if (user && user._id) {
@@ -100,39 +139,85 @@ export default function TableBooking() {
                 {!selected ? (
                     <>
                         <h2 className="text-2xl font-black text-gray-900 mb-6">Choose a Restaurant</h2>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                            {restaurants.map(r => (
-                                <button
-                                    key={r.id}
-                                    onClick={() => { setSelected(r); setStep(1); }}
-                                    className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 hover:shadow-xl hover:-translate-y-1 transition-all text-left"
-                                >
-                                    <div className="h-40 bg-gradient-to-br from-purple-100 to-indigo-100 overflow-hidden">
-                                        {r.image ? (
-                                            <img src={r.image} alt={r.name} className="w-full h-full object-cover" />
-                                        ) : (
-                                            <div className="w-full h-full flex items-center justify-center text-5xl">🍽️</div>
-                                        )}
-                                    </div>
-                                    <div className="p-4">
-                                        <h3 className="font-bold text-gray-900">{r.name}</h3>
-                                        <p className="text-gray-500 text-sm">{r.cuisine}</p>
-                                        <div className="flex items-center gap-3 mt-2 text-xs text-gray-500">
-                                            <div className="flex items-center gap-1">
-                                                <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
-                                                {r.rating?.toFixed(1)}
+                        {loading ? (
+                            <div className="col-span-full py-20 flex flex-col items-center justify-center">
+                                <div className="animate-spin w-10 h-10 border-4 border-purple-500 border-t-transparent rounded-full mb-4" />
+                                <p className="text-gray-500 font-bold">Finding best tables for you...</p>
+                            </div>
+                        ) : restaurants.length === 0 ? (
+                            <div className="col-span-full py-20 text-center bg-white rounded-3xl border-2 border-dashed border-gray-100">
+                                <div className="text-6xl mb-4">🍽️</div>
+                                <h3 className="text-xl font-bold text-gray-900">No restaurants available</h3>
+                                <p className="text-gray-500">We couldn't find any restaurants open for booking right now.</p>
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                                {restaurants.map(r => {
+                                    const open = isRestaurantOpen();
+                                    const cuisineDisplay = Array.isArray(r.cuisine) ? r.cuisine.join(", ") : r.cuisine || "";
+                                    const rawPrice = r.price_range || "₹₹";
+                                    const priceLabel = priceRangeMap[rawPrice] || priceRangeMap[rawPrice.replace(/\$/g, "₹")] || "₹150–300";
+
+                                    return (
+                                        <button
+                                            key={r._id || r.id}
+                                            onClick={() => { setSelected(r); setStep(1); }}
+                                            className="bg-white rounded-3xl overflow-hidden shadow-sm border border-gray-100 hover:shadow-2xl hover:-translate-y-1 transition-all text-left group flex flex-col"
+                                        >
+                                            <div className="h-48 bg-gradient-to-br from-orange-50 to-red-50 overflow-hidden relative">
+                                                {r.image ? (
+                                                    <img src={r.image} alt={r.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                                                ) : (
+                                                    <div className="w-full h-full flex items-center justify-center text-5xl">🍽️</div>
+                                                )}
+                                                
+                                                {/* Open/Closed Badge */}
+                                                {!open && (
+                                                    <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] flex items-center justify-center">
+                                                        <span className="bg-white text-gray-900 font-black px-4 py-1.5 rounded-full text-[10px] uppercase tracking-widest shadow-xl">
+                                                            Closed · Opens 8 AM
+                                                        </span>
+                                                    </div>
+                                                )}
+                                                
+                                                {open && (
+                                                    <div className="absolute bottom-3 left-3 bg-orange-500/90 backdrop-blur-md text-white text-[9px] font-black px-2.5 py-1.5 rounded-xl flex items-center gap-1.5 shadow-lg border border-white/20">
+                                                        <span className="w-1.5 h-1.5 bg-white rounded-full inline-block animate-pulse" />
+                                                        OPEN UNTIL 11 PM
+                                                    </div>
+                                                )}
+
+                                                <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-sm px-2.5 py-1.5 rounded-xl flex items-center gap-1.5 text-[10px] font-black text-gray-900 shadow-xl">
+                                                    <Star className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500" />
+                                                    {r.rating > 0 ? r.rating.toFixed(1) : "NEW"}
+                                                </div>
                                             </div>
-                                            <div className="flex items-center gap-1">
-                                                <Users className="w-3 h-3" /> {r.total_seats || 40} seats
+                                            <div className="p-5 flex-1 flex flex-col">
+                                                <h3 className="font-black text-gray-900 text-lg group-hover:text-orange-500 transition-colors truncate mb-0.5">{r.name}</h3>
+                                                <p className="text-gray-500 text-xs font-bold truncate uppercase tracking-tight mb-4">{cuisineDisplay}</p>
+                                                
+                                                <div className="mt-auto pt-4 border-t border-gray-100 flex items-center justify-between text-[10px] font-black text-gray-700 uppercase tracking-widest">
+                                                    <div className="flex items-center gap-1.5">
+                                                        <Users className="w-3.5 h-3.5 text-orange-600" />
+                                                        {r.total_seats || 40} SEATS
+                                                    </div>
+                                                    <div className="flex items-center gap-1.5">
+                                                        <MapPin className="w-3.5 h-3.5 text-orange-600" />
+                                                        {r.city || "PUNE"}
+                                                    </div>
+                                                </div>
+                                                
+                                                <div className="mt-3 flex items-center gap-3 text-[10px] font-black text-gray-600 uppercase tracking-widest">
+                                                    <span>{priceLabel}</span>
+                                                    <span>•</span>
+                                                    <span>{r.delivery_time || 30} MINS</span>
+                                                </div>
                                             </div>
-                                            <div className="flex items-center gap-1">
-                                                <MapPin className="w-3 h-3" /> {r.city}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </button>
-                            ))}
-                        </div>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        )}
                     </>
                 ) : (
                     <div className="max-w-xl mx-auto">

@@ -1,17 +1,41 @@
 import Restaurant from '../models/Restaurant.js';
+import Order from '../models/Order.js';
 
-const getRestaurants = async (req, res) => {
+const getRecommendations = async (req, res) => {
   try {
-    // Default to Bengaluru if not provided
-    const {
-      longitude = 77.5946,
-      latitude = 12.9716,
-      maxDistance = 15000,
-      cuisine,
-      page = 1,
-      limit = 10
-    } = req.query;
+    const { longitude, latitude } = req.query;
+    const userId = req.user?._id;
 
+    let favoriteCuisines = [];
+
+    if (userId) {
+      // Find user's last 10 orders to determine favorite cuisines
+      const recentOrders = await Order.find({ customer: userId })
+        .sort({ createdAt: -1 })
+        .limit(10);
+
+      const cuisines = recentOrders.map(o => o.restaurantCuisine).filter(Boolean);
+      const cuisineCounts = cuisines.reduce((acc, c) => {
+        acc[c] = (acc[c] || 0) + 1;
+        return acc;
+      }, {});
+
+      favoriteCuisines = Object.entries(cuisineCounts)
+        .sort((a, b) => b[1] - a[1])
+        .map(e => e[0]);
+    }
+
+    // Default cuisines if no history
+    if (favoriteCuisines.length === 0) {
+      favoriteCuisines = ['Indian', 'Italian', 'Chinese'];
+    }
+
+    // Proximity search REQUIRES coordinates
+    if (!latitude || !longitude) {
+        return res.json({ success: true, data: [], basedOn: [] });
+    }
+
+    // Recommend top-rated restaurants matching favorite cuisines nearby
     const pipeline = [
       {
         $geoNear: {
@@ -20,8 +44,82 @@ const getRestaurants = async (req, res) => {
             coordinates: [parseFloat(longitude), parseFloat(latitude)]
           },
           distanceField: 'distance',
+          maxDistance: 20000,
+          spherical: true,
+          query: { is_approved: true }
+        }
+      },
+      {
+        $match: {
+          $or: [
+            { cuisine: { $in: favoriteCuisines } },
+            { rating: { $gte: 4.5 } }
+          ],
+          is_approved: { $ne: false }
+        }
+      },
+      { $sort: { rating: -1, distance: 1 } },
+      { $limit: 6 }
+    ];
+
+    const recommendations = await Restaurant.aggregate(pipeline);
+    res.json({ success: true, data: recommendations, basedOn: favoriteCuisines.slice(0, 2) });
+
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const getRestaurants = async (req, res) => {
+  try {
+    const {
+      lng,
+      lat,
+      maxDistance = 20000, 
+      cuisine,
+      owner,
+      all,
+      includeUnapproved,
+      page = 1,
+      limit = 10
+    } = req.query;
+
+    // If filtering by owner or explicitly requested all, skip geoNear
+    if (owner || all === 'true') {
+      const query = {};
+      if (owner) query.owner = owner;
+      if (cuisine) query.cuisine = { $in: [cuisine] };
+
+      // Only include unapproved if specifically requested (Admin view)
+      if (includeUnapproved !== 'true' && !owner) {
+        query.is_approved = true;
+      }
+
+      const restaurants = await Restaurant.find(query)
+        .populate('owner', 'name email')
+        .sort({ createdAt: -1 })
+        .skip((parseInt(page) - 1) * parseInt(limit))
+        .limit(parseInt(limit));
+
+      return res.json({ success: true, data: restaurants });
+    }
+
+    // Proximity search REQUIRES coordinates
+    if (!lat || !lng) {
+      return res.json({ success: true, data: [], message: "Please select a location to see nearby restaurants" });
+    }
+
+    const pipeline = [
+      {
+        $geoNear: {
+          near: {
+            type: 'Point',
+            coordinates: [parseFloat(lng), parseFloat(lat)]
+          },
+          distanceField: 'distance',
           maxDistance: parseInt(maxDistance),
-          spherical: true
+          spherical: true,
+          query: { is_approved: true }
         }
       },
       {
@@ -66,7 +164,7 @@ const getRestaurants = async (req, res) => {
         });
 
         const data = await response.json();
-        
+
         if (data.places && data.places.length > 0) {
           const placesToInsert = data.places.map(place => {
             let imageUrl = 'https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&q=80&w=1000';
@@ -128,7 +226,7 @@ const getRestaurantById = async (req, res) => {
 const createRestaurant = async (req, res) => {
   try {
     const { name, cuisine, address, longitude, latitude, image } = req.body;
-   
+
     const restaurant = await Restaurant.create({
       owner: req.user._id,
       name,
@@ -162,4 +260,16 @@ const updateRestaurant = async (req, res) => {
   }
 };
 
-export { getRestaurants, getRestaurantById, createRestaurant, updateRestaurant };
+const deleteRestaurant = async (req, res) => {
+  try {
+    const restaurant = await Restaurant.findByIdAndDelete(req.params.id);
+    if (!restaurant) {
+      return res.status(404).json({ message: 'Restaurant not found' });
+    }
+    res.json({ success: true, message: 'Restaurant deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export { getRestaurants, getRestaurantById, createRestaurant, updateRestaurant, deleteRestaurant, getRecommendations };

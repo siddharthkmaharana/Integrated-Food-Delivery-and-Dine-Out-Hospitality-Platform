@@ -2,6 +2,8 @@ import * as dotenv from 'dotenv';
 dotenv.config();
 
 import express from 'express';
+import { fileURLToPath } from 'url';
+import path from 'path';
 import cors from 'cors';
 import http from 'http';
 import { Server } from 'socket.io';
@@ -14,6 +16,8 @@ import reservationRoutes from './routes/reservationRoutes.js';
 import reviewRoutes from './routes/reviewRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import couponRoutes from './routes/couponRoutes.js';
+import eventRoutes from './routes/eventRoutes.js';
+import adminRoutes from './routes/adminRoutes.js';
 import socketHandler from './sockets/socketHandler.js';
 
 connectDB();
@@ -33,6 +37,11 @@ app.set('io', io);
 app.use(cors());
 app.use(express.json());
 
+// Serve locally stored media (dev fallback when AWS S3 is not configured)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/restaurants', restaurantRoutes);
@@ -42,6 +51,8 @@ app.use('/api/reservations', reservationRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/coupons', couponRoutes);
+app.use('/api/events', eventRoutes);
+app.use('/api/admin', adminRoutes);
 // Socket handler
 socketHandler(io);
 

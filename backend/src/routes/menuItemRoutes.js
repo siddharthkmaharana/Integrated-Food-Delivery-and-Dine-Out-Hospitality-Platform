@@ -17,7 +17,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-router.post('/', protect, authorize('restaurant'), async (req, res) => {
+router.post('/', protect, authorize('restaurant', 'admin'), async (req, res) => {
   try {
     const item = await MenuItem.create(req.body);
     res.status(201).json(item);
@@ -26,7 +26,7 @@ router.post('/', protect, authorize('restaurant'), async (req, res) => {
   }
 });
 
-router.put('/:id', protect, authorize('restaurant'), async (req, res) => {
+router.put('/:id', protect, authorize('restaurant', 'admin'), async (req, res) => {
   try {
     const item = await MenuItem.findByIdAndUpdate(req.params.id, req.body, { new: true });
     if (!item) return res.status(404).json({ message: 'Item not found' });
@@ -36,7 +36,7 @@ router.put('/:id', protect, authorize('restaurant'), async (req, res) => {
   }
 });
 
-router.delete('/:id', protect, authorize('restaurant'), async (req, res) => {
+router.delete('/:id', protect, authorize('restaurant', 'admin'), async (req, res) => {
   try {
     await MenuItem.findByIdAndDelete(req.params.id);
     res.json({ message: 'Deleted' });
