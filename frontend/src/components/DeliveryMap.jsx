@@ -46,7 +46,7 @@ export default function DeliveryMap({ restaurantLoc, customerLoc, courierLoc, st
   if (dLoc) bounds.push(dLoc);
 
   // Fallback center if no coordinates at all (e.g., default map)
-  const defaultCenter = [12.9716, 77.5946]; // Bengaluru default
+  const defaultCenter = [18.5204, 73.8567]; // Pune default
 
   // Route path
   const routePositions = [];

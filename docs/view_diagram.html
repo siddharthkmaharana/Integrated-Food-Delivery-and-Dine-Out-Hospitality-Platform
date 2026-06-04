@@ -1,0 +1,81 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Project ER Diagram - Final Logic</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <script>mermaid.initialize({startOnLoad:true, theme: "forest"});</script>
+    <style>
+        body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; padding: 20px; background: #fafafa; }
+        .container { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+        h1 { color: #333; margin-bottom: 30px; }
+    </style>
+</head>
+<body>
+    <h1>Integrated Platform - Logical ER Diagram</h1>
+    <div class="container">
+        <div class="mermaid">
+        flowchart TD
+            %% --- USER SUPERCLASS ---
+            User[User Entity]
+            U1([_id]) --- User
+            U2([email]) --- User
+            U3([password]) --- User
+            U4([name]) --- User
+            U5([phone]) --- User
+
+            %% --- ISA LOGIC (Inheritance) ---
+            ISA{ISA}
+            User --- ISA
+            ISA --- Customer[Customer Role]
+            ISA --- Courier[Courier Role]
+            ISA --- RestOwner[Restaurant Owner Role]
+            ISA --- Admin[Admin Role]
+
+            %% Role Specific Attributes (Strictly from Code)
+            C_Pts([loyaltyPoints]) --- Customer
+            C_Addr([addresses]) --- Customer
+            
+            Cr_On([isOnline]) --- Courier
+            Cr_Loc([location]) --- Courier
+            Cr_Rate([rating]) --- Courier
+
+            A1([assigning restaurant]) --- Admin
+            A2([check orders]) --- Admin
+            A3([manage users]) --- Admin
+
+            %% --- SYSTEM LOGIC ---
+            Order[Order]
+            Restaurant[Restaurant]
+            Item[MenuItem]
+            Reservation[Reservation]
+            Event[Event]
+
+            Customer ---|PLACES| Order
+            Courier ---|DELIVERS| Order
+            RestOwner ---|OWNS| Restaurant
+            Restaurant ---|PREPARES| Order
+            Order ---|HAS| Item
+
+            Restaurant ---|OFFERS| Reservation
+            Restaurant ---|HOSTS| Event
+            Customer ---|BOOKS| Reservation
+            Customer ---|ATTENDS| Event
+
+            %% Styling
+            style User fill:#ffe4a3,stroke:#ff9b00,stroke-width:2px
+            style Customer fill:#ffe4a3,stroke:#ff9b00,stroke-width:2px
+            style Courier fill:#ffe4a3,stroke:#ff9b00,stroke-width:2px
+            style RestOwner fill:#ffe4a3,stroke:#ff9b00,stroke-width:2px
+            style Admin fill:#ffe4a3,stroke:#ff9b00,stroke-width:2px
+            style Order fill:#ffe4a3,stroke:#ff9b00,stroke-width:2px
+            style Restaurant fill:#ffe4a3,stroke:#ff9b00,stroke-width:2px
+            style Item fill:#ffe4a3,stroke:#ff9b00,stroke-width:2px
+            style Reservation fill:#f5f3ff,stroke:#7c3aed,stroke-width:2px
+            style Event fill:#f5f3ff,stroke:#7c3aed,stroke-width:2px
+            
+            style ISA fill:#fff,stroke:#000
+        </div>
+    </div>
+</body>
+</html>

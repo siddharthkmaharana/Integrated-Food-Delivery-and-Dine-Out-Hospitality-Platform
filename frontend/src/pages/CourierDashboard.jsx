@@ -57,7 +57,7 @@ export default function CourierDashboard() {
             const initialLocations = {};
             ords.forEach(o => {
                 if (o.status === "PREPARING" || o.status === "PICKED_UP" || o.status === "DELIVERING") {
-                    const rLoc = o.restaurant?.location?.coordinates ? { lat: o.restaurant.location.coordinates[1], lng: o.restaurant.location.coordinates[0] } : { lat: 12.9716, lng: 77.5946 };
+                    const rLoc = o.restaurant?.location?.coordinates ? { lat: o.restaurant.location.coordinates[1], lng: o.restaurant.location.coordinates[0] } : { lat: 18.5204, lng: 73.8567 };
                     // Start courier near restaurant
                     initialLocations[o._id || o.id] = { lat: rLoc.lat + 0.005, lng: rLoc.lng - 0.005 };
                 }
@@ -113,7 +113,7 @@ export default function CourierDashboard() {
                     let targetLoc;
                     if (status === "PREPARING" || status === "PICKED_UP") {
                         // Move toward restaurant
-                        targetLoc = o.restaurant?.location?.coordinates && (o.restaurant.location.coordinates[0] !== 0 || o.restaurant.location.coordinates[1] !== 0) ? { lat: o.restaurant.location.coordinates[1], lng: o.restaurant.location.coordinates[0] } : { lat: 12.9716, lng: 77.5946 };
+                        targetLoc = o.restaurant?.location?.coordinates && (o.restaurant.location.coordinates[0] !== 0 || o.restaurant.location.coordinates[1] !== 0) ? { lat: o.restaurant.location.coordinates[1], lng: o.restaurant.location.coordinates[0] } : { lat: 18.5204, lng: 73.8567 };
                     } else if (status === "DELIVERING") {
                         // Move toward customer
                         targetLoc = o.customer?.location?.coordinates && (o.customer.location.coordinates[0] !== 0 || o.customer.location.coordinates[1] !== 0) ? { lat: o.customer.location.coordinates[1], lng: o.customer.location.coordinates[0] } : { 
@@ -165,7 +165,7 @@ export default function CourierDashboard() {
             
             // Initialize map location immediately
             setCourierLocations(prev => {
-                const rLoc = updated.restaurant?.location?.coordinates ? { lat: updated.restaurant.location.coordinates[1], lng: updated.restaurant.location.coordinates[0] } : { lat: 12.9716, lng: 77.5946 };
+                const rLoc = updated.restaurant?.location?.coordinates ? { lat: updated.restaurant.location.coordinates[1], lng: updated.restaurant.location.coordinates[0] } : { lat: 18.5204, lng: 73.8567 };
                 return {
                     ...prev,
                     [updated._id || updated.id]: { lat: rLoc.lat + 0.005, lng: rLoc.lng - 0.005 }
@@ -195,10 +195,9 @@ export default function CourierDashboard() {
     const activeDeliveries = myOrders.filter(o => ["READY_FOR_PICKUP", "PREPARING", "PICKED_UP", "DELIVERING"].includes(o.status));
     const completedDeliveries = myOrders.filter(o => o.status === "DELIVERED");
     
-    // Calculate total earnings dynamically (25% of delivered orders)
+    // Calculate total earnings dynamically (flat ₹40 per delivered order)
     const earnings = completedDeliveries.reduce((sum, o) => {
-        const amount = o.totalAmount || o.total || 0;
-        return sum + (amount * 0.25);
+        return sum + 40;
     }, 0);
 
     const displayedOrders = statusFilter === "active" ? activeDeliveries : completedDeliveries;
@@ -286,7 +285,7 @@ export default function CourierDashboard() {
                             {availableOrders.map(o => {
                                 const id = o._id || o.orderId;
                                 const amount = o.totalAmount || o.total || 0;
-                                const earned = (amount * 0.25).toFixed(0);
+                                const earned = 40;
                                 
                                 return (
                                 <div key={id} className="bg-orange-50 border-2 border-orange-200 rounded-2xl p-5 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -322,7 +321,7 @@ export default function CourierDashboard() {
                         <div className="space-y-4">
                             {displayedOrders.map(o => {
                                 const amount = o.totalAmount || o.total || 0;
-                                const earned = (amount * 0.25).toFixed(0);
+                                const earned = 40;
                                 return (
                                 <div key={o._id} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 relative overflow-hidden">
                                      {o.status === "PREPARING" && <div className="absolute top-0 left-0 w-1.5 h-full bg-yellow-400" />}
@@ -347,7 +346,7 @@ export default function CourierDashboard() {
                                                 <div className="my-4 h-64 rounded-2xl relative overflow-hidden border border-gray-200">
                                                     <DeliveryMap 
                                                         status={o.status}
-                                                        restaurantLoc={o.restaurant?.location?.coordinates && (o.restaurant.location.coordinates[0] !== 0 || o.restaurant.location.coordinates[1] !== 0) ? { lng: o.restaurant.location.coordinates[0], lat: o.restaurant.location.coordinates[1] } : { lat: 12.9716, lng: 77.5946 }}
+                                                        restaurantLoc={o.restaurant?.location?.coordinates && (o.restaurant.location.coordinates[0] !== 0 || o.restaurant.location.coordinates[1] !== 0) ? { lng: o.restaurant.location.coordinates[0], lat: o.restaurant.location.coordinates[1] } : { lat: 18.5204, lng: 73.8567 }}
                                                         customerLoc={o.customer?.location?.coordinates && (o.customer.location.coordinates[0] !== 0 || o.customer.location.coordinates[1] !== 0) ? { lng: o.customer.location.coordinates[0], lat: o.customer.location.coordinates[1] } : { 
                                                             lat: o.restaurant?.location?.coordinates ? o.restaurant.location.coordinates[1] - 0.02 : 12.9516, 
                                                             lng: o.restaurant?.location?.coordinates ? o.restaurant.location.coordinates[0] + 0.02 : 77.6146 
@@ -363,7 +362,7 @@ export default function CourierDashboard() {
                                                     <div>
                                                         <p className="font-black text-gray-900 text-[10px] uppercase tracking-wider">Pickup From</p>
                                                         <p className="font-bold text-gray-700">{o.restaurantName || o.restaurant?.name || "Restaurant"}</p>
-                                                        <p className="text-gray-500 text-xs">{o.restaurant?.address || "Jaipur, Rajasthan"}</p>
+                                                        <p className="text-gray-500 text-xs">{o.restaurant?.address || "Pune, Maharashtra"}</p>
                                                     </div>
                                                 </div>
                                                 <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100">

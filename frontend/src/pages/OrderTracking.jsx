@@ -135,7 +135,7 @@ export default function OrderTracking() {
                         <div className="bg-gray-100 h-64 rounded-2xl relative overflow-hidden">
                             <DeliveryMap 
                                 status={order.status}
-                                restaurantLoc={order.restaurant?.location?.coordinates && (order.restaurant.location.coordinates[0] !== 0 || order.restaurant.location.coordinates[1] !== 0) ? { lng: order.restaurant.location.coordinates[0], lat: order.restaurant.location.coordinates[1] } : { lat: 12.9716, lng: 77.5946 }}
+                                restaurantLoc={order.restaurant?.location?.coordinates && (order.restaurant.location.coordinates[0] !== 0 || order.restaurant.location.coordinates[1] !== 0) ? { lng: order.restaurant.location.coordinates[0], lat: order.restaurant.location.coordinates[1] } : { lat: 18.5204, lng: 73.8567 }}
                                 customerLoc={order.customer?.location?.coordinates && (order.customer.location.coordinates[0] !== 0 || order.customer.location.coordinates[1] !== 0) ? { lng: order.customer.location.coordinates[0], lat: order.customer.location.coordinates[1] } : { 
                                     lat: order.restaurant?.location?.coordinates ? order.restaurant.location.coordinates[1] - 0.02 : 12.9516, 
                                     lng: order.restaurant?.location?.coordinates ? order.restaurant.location.coordinates[0] + 0.02 : 77.6146 
