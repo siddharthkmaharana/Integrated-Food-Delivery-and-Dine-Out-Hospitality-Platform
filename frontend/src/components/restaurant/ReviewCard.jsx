@@ -11,7 +11,7 @@ export default function ReviewCard({ review }) {
                     <div>
                         <p className="font-bold text-gray-900 text-sm">{review.user?.name || review.user_name || "Anonymous"}</p>
                         <p className="text-xs text-gray-400">
-                            {review.createdAt ? format(new Date(review.createdAt), "MMM d, yyyy") : ""}
+                            {review.createdAt && !isNaN(new Date(review.createdAt).getTime()) ? format(new Date(review.createdAt), "MMM d, yyyy") : "Recently"}
                         </p>
                     </div>
                 </div>

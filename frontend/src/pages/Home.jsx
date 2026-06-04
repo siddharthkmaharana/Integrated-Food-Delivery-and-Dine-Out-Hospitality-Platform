@@ -4,6 +4,7 @@ import { createPageUrl } from "@/utils";
 import { Search, Star, Clock, ChevronRight, Flame, Tag, Utensils, Coffee, Pizza, Salad } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import RestaurantCard from "../components/home/RestaurantCard";
 import CategoryPill from "../components/home/CategoryPill";
 import HeroSection from "../components/home/HeroSection";
@@ -22,24 +23,42 @@ const CATEGORIES = [
 ];
 
 import { api } from "@/api/client";
+import { useLocation } from "@/lib/LocationContext";
 
 export default function Home() {
   const [restaurants, setRestaurants] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
+  const { coords } = useLocation();
+
+  const [recommendations, setRecommendations] = useState([]);
+  const [recLoading, setRecLoading] = useState(false);
+  const [basedOn, setBasedOn] = useState([]);
 
   useEffect(() => {
-    api.restaurants.list()
+    setLoading(true);
+    api.restaurants.list(coords)
       .then(data => {
-        setRestaurants(data.data || data || []);
+        const resList = data.data || data || [];
+        setRestaurants(resList);
         setLoading(false);
       })
       .catch((err) => {
         console.error("Failed to load restaurants", err);
         setLoading(false);
       });
-  }, []);
+
+    // Fetch recommendations
+    setRecLoading(true);
+    api.restaurants.recommendations(coords)
+      .then(data => {
+        setRecommendations(data.data || []);
+        setBasedOn(data.basedOn || []);
+        setRecLoading(false);
+      })
+      .catch(() => setRecLoading(false));
+  }, [coords]);
 
   const filtered = restaurants.filter(r => {
     const cuisineMatch = Array.isArray(r.cuisine) 
@@ -80,7 +99,40 @@ export default function Home() {
 
 
 
-      {/* All/Filtered Restaurants */}
+      {/* Recommendations Section */}
+      {recommendations.length > 0 && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-orange-500 flex items-center justify-center shadow-lg shadow-orange-100">
+                <Flame className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-black text-gray-900 tracking-tight">Recommended for You</h2>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Based on your love for</span>
+                  <div className="flex gap-1">
+                    {basedOn.map(b => (
+                      <Badge key={b} variant="secondary" className="text-[9px] h-4 px-1.5 bg-gray-100 text-gray-600 border-none font-black uppercase">{b}</Badge>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+            <Badge className="bg-orange-50 text-orange-600 border-none font-black text-[10px] uppercase tracking-widest px-3 py-1 rounded-full">AI Powered</Badge>
+          </div>
+          
+          <div className="flex gap-5 overflow-x-auto pb-6 scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0">
+            {recommendations.map(r => (
+              <div key={r._id} className="min-w-[280px] sm:min-w-[320px]">
+                <RestaurantCard restaurant={r} />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Main Filtered List */}
       <div id="restaurant-list" className="max-w-7xl mx-auto px-4 sm:px-6 pb-6">
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -114,7 +166,7 @@ export default function Home() {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-            {filtered.slice(0, 12).map(r => <RestaurantCard key={r._id} restaurant={r} />)}
+            {filtered.slice(0, 12).map(r => <RestaurantCard key={r._id || r.id} restaurant={r} />)}
           </div>
         )}
       </div>

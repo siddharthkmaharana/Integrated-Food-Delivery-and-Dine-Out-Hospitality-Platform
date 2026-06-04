@@ -41,7 +41,6 @@ export const api = {
       return data;
     },
 
-    // ✅ FIXED: added missing register method
     register: async (payload) => {
       const { data } = await apiClient.post("/auth/register", payload);
       localStorage.setItem("token", data.token);
@@ -53,30 +52,42 @@ export const api = {
       window.location.href = "/login";
     },
 
-    updateMe: async (payload) => {
+    updateProfile: async (payload) => {
       const { data } = await apiClient.put("/auth/profile", payload);
       return data;
     },
   },
 
   restaurants: {
-    list: async (sort, limit) => {
-      const { data } = await apiClient.get("/restaurants", {
-        params: { sort, limit },
-      });
+    list: async (coords = {}, sort, limit) => {
+      const params = { ...coords, sort, limit };
+      if (params.latitude) { params.lat = params.latitude; delete params.latitude; }
+      if (params.longitude) { params.lng = params.longitude; delete params.longitude; }
+      
+      const { data } = await apiClient.get("/restaurants", { params });
       return data;
     },
 
     filter: async (params, sort, limit) => {
+      if (params.id) {
+        const { data } = await apiClient.get(`/restaurants/${params.id}`);
+        const actual = data?.data || data;
+        return [actual];
+      }
       const { data } = await apiClient.get("/restaurants", {
         params: { ...params, sort, limit },
       });
-      return data;
+      return data?.data || data;
     },
 
     getById: async (id) => {
       const { data } = await apiClient.get(`/restaurants/${id}`);
-      return data;
+      return data?.data || data;
+    },
+
+    recommendations: async (params) => {
+      const { data } = await apiClient.get("/restaurants/recommendations", { params });
+      return data?.data || data;
     },
 
     create: async (payload) => {
@@ -84,10 +95,14 @@ export const api = {
       return data;
     },
 
-    update: async (id, payload) => {
-      const { data } = await apiClient.put(`/restaurants/${id}`, payload);
-      return data;
-    },
+        update: async (id, payload) => {
+            const { data } = await apiClient.put(`/restaurants/${id}`, payload);
+            return data;
+        },
+        delete: async (id) => {
+            const { data } = await apiClient.delete(`/restaurants/${id}`);
+            return data;
+        },
   },
 
   menuItems: {
@@ -136,9 +151,13 @@ export const api = {
         params: { ...params, sort, limit },
       });
 
-      return data;
+      return data?.data || data;
     },
 
+    getById: async (id) => {
+      const { data } = await apiClient.get(`/orders/${id}`);
+      return data?.data || data;
+    },
     list: async (sort, limit) => {
       const { data } = await apiClient.get("/orders", {
         params: { sort, limit },
@@ -155,12 +174,22 @@ export const api = {
       const { data } = await apiClient.put(`/orders/${id}`, payload);
       return data;
     },
-    subscribeOrder: (orderId, cb) => {
-      const socket = io(getSocketUrl() || "/", { transports: ['polling'] });
+    accept: async (id) => {
+      const { data } = await apiClient.post(`/orders/${id}/accept`);
+      return data;
+    },
+    reject: async (id) => {
+      const { data } = await apiClient.post(`/orders/${id}/reject`);
+      return data;
+    },
+    subscribeOrder: (orderId, onStatusUpdate, onLocationUpdate) => {
+      const socket = io(getSocketUrl() || "/");
       socket.emit("join_order", orderId);
-      socket.on("order_update", cb);
+      if (onStatusUpdate) socket.on("order_update", onStatusUpdate);
+      if (onLocationUpdate) socket.on("location_update", onLocationUpdate);
       return () => {
-        socket.off("order_update", cb);
+        if (onStatusUpdate) socket.off("order_update", onStatusUpdate);
+        if (onLocationUpdate) socket.off("location_update", onLocationUpdate);
         socket.disconnect();
       };
     },
@@ -177,7 +206,6 @@ export const api = {
     },
     subscribeAdmin: (onNewOrder, onUpdate) => {
       const socket = io(getSocketUrl() || "/", { transports: ['polling'] });
-      // Admins just listen to broadcasts if we broadcast, or we can listen to all
       if (onNewOrder) socket.on("new_order", onNewOrder);
       if (onUpdate) socket.on("order_update", onUpdate);
       return () => {
@@ -204,6 +232,10 @@ export const api = {
     create: async (payload) => {
       const { data } = await apiClient.post("/reviews", payload);
       return data;
+    },
+    getSuggestions: async (orderId) => {
+      const { data } = await apiClient.get(`/reviews/suggestions/${orderId}`);
+      return data;
     }
   },
 
@@ -226,15 +258,6 @@ export const api = {
     },
   },
 
-  users: {
-    list: async (sort, limit) => {
-      const { data } = await apiClient.get("/users", {
-        params: { sort, limit },
-      });
-      return data;
-    },
-  },
-
   coupons: {
     list: async (sort, limit) => {
       const { data } = await apiClient.get("/coupons", {
@@ -242,10 +265,46 @@ export const api = {
       });
       return data;
     },
-
-    filter: async (params) => {
-      const { data } = await apiClient.get("/coupons", { params });
-      return data;
+    create: async (payload) => {
+        const { data } = await apiClient.post("/coupons", payload);
+        return data;
+    },
+    delete: async (id) => {
+        await apiClient.delete(`/coupons/${id}`);
     },
   },
+  
+  events: {
+    list: async (params) => {
+      const { data } = await apiClient.get("/events", { params });
+      return data;
+    },
+    getById: async (id) => {
+      const { data } = await apiClient.get(`/events/${id}`);
+      return data;
+    },
+    create: async (payload) => {
+      const { data } = await apiClient.post("/events", payload);
+      return data;
+    },
+    delete: async (id) => {
+      const { data } = await apiClient.delete(`/events/${id}`);
+      return data?.data || data;
+    },
+    rsvp: async (id) => {
+      const { data } = await apiClient.post(`/events/${id}/rsvp`);
+      return data?.data || data;
+    }
+  },
+
+  admin: {
+    listUsers: async () => {
+      const { data } = await apiClient.get("/admin/users");
+      return data?.data || data;
+    },
+    assignOwner: async (userId, restaurantId) => {
+      const { data } = await apiClient.post("/admin/assign-owner", { userId, restaurantId });
+      return data?.data || data;
+    }
+  }
 };

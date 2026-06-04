@@ -146,14 +146,20 @@ Features:
 
 ## ⭐ Gamified Review System
 
-Encourages users to leave **high-quality reviews**.
+Encourages users to leave **high-quality reviews** with a dynamic point allocation engine.
 
-Review points are calculated using:
+### Scoring Algorithm
 
-```
-Reward Points =
-Word Count × 2 + Keyword Score
-```
+| Component | Points | Cap |
+|---|---|---|
+| Word Count | 1 pt per word | Max 20 pts |
+| Keyword Density | 5 pts per bonus keyword | Max 30 pts |
+| **Media Upload (photo)** | **+15 pts flat bonus** | — |
+| **Maximum Total** | | **65 pts** |
+
+Bonus Keywords: `delicious`, `amazing`, `fresh`, `hot`, `spicy`, `tasty`, `excellent`, `perfect`, `quick`, `friendly`
+
+Earned points are added to the user's loyalty points balance and can be redeemed for discounts.
 
 ---
 
@@ -342,8 +348,59 @@ GET /api/orders/user/:id
 ## Reviews
 
 ```
-POST /api/reviews
-GET /api/reviews/restaurant/:id
+POST /api/reviews               — Submit review (multipart/form-data with optional "media" image)
+GET  /api/reviews/restaurant/:id — All reviews for a restaurant
+GET  /api/reviews/suggestions/:orderId — AI keyword suggestions for review
+GET  /api/reviews/media/:filename — Serve locally stored review images (dev)
+```
+
+---
+
+# 🗃 MongoDB Query Optimization & Index Verification
+
+All geospatial queries are validated using `explain()` execution plans to confirm that the **2dsphere index is actively utilized** and no full-collection scans (COLLSCAN) occur.
+
+### Running the explain() verification
+
+```js
+// Confirmed in geo.test.js — Test 6
+const explained = await Restaurant.collection
+  .find({
+    location: {
+      $near: {
+        $geometry: { type: 'Point', coordinates: [77.5946, 12.9716] },
+        $maxDistance: 20000
+      }
+    }
+  })
+  .explain('executionStats');
+
+// Verified assertions:
+// ✅ explained.queryPlanner.winningPlan.stage !== 'COLLSCAN'
+// ✅ executionStats.totalKeysExamined > 0  (index used)
+// ✅ executionStats.executionTimeMillis < 200  (sub-200ms target)
+```
+
+### Index Defined in Schema
+
+```js
+// Restaurant.js
+restaurantSchema.index({ location: '2dsphere' });  // Geospatial
+restaurantSchema.index({ owner: 1 });              // Owner lookup
+
+// Order.js
+orderSchema.index({ restaurant: 1, createdAt: -1 });
+orderSchema.index({ customer: 1, createdAt: -1 });
+
+// MenuItem.js
+menuItemSchema.index({ restaurant: 1 });
+```
+
+Run the full test suite to reproduce index verification:
+
+```bash
+cd backend
+npm test -- --testPathPattern=geo.test
 ```
 
 ---
@@ -379,17 +436,22 @@ npm install
 
 ## Setup Environment Variables
 
-Create `.env` file in backend folder.
+Create `.env` file in backend folder:
 
-Example:
-
-```
+```env
 PORT=5000
 MONGO_URI=your_mongodb_connection_string
-JWT_SECRET=secret_key
-AWS_ACCESS_KEY=your_key
-AWS_SECRET_KEY=your_key
+JWT_SECRET=your_jwt_secret_key
+JWT_EXPIRE=7d
+
+# AWS S3 Media Storage (leave blank for local disk in development)
+AWS_ACCESS_KEY_ID=your_access_key
+AWS_SECRET_ACCESS_KEY=your_secret_key
+AWS_REGION=ap-south-1
+AWS_S3_BUCKET=dineout-media
 ```
+
+> **Note:** When `AWS_ACCESS_KEY_ID` and `AWS_S3_BUCKET` are set, the upload middleware automatically streams media to S3. When they are blank, files are saved locally to `backend/uploads/`.
 
 ---
 

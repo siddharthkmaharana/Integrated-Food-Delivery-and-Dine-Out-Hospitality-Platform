@@ -31,6 +31,11 @@ export default function Login() {
       label: "🚴 Courier",
       desc: "Deliver orders",
     },
+    {
+      value: "admin",
+      label: "🛡️ Admin",
+      desc: "Full system access",
+    },
   ];
 
   const handleSubmit = async (e) => {
@@ -69,7 +74,17 @@ export default function Login() {
 
       console.log("Auth success:", response);
 
-      navigate("/");
+      const userRole = response.role;
+      if (userRole === "restaurant") {
+        navigate("/RestaurantDashboard");
+      } else if (userRole === "courier") {
+        navigate("/CourierDashboard");
+      } else if (userRole === "admin") {
+        navigate("/AdminDashboard");
+      } else {
+        navigate("/");
+      }
+      
       window.location.reload();
     } catch (err) {
       console.error("Auth error:", err.response?.data || err.message);
@@ -77,7 +92,7 @@ export default function Login() {
       setError(
         err.response?.data?.message ||
           err.response?.data?.error ||
-          "Registration failed. Please try again."
+          (isLogin ? "Authentication failed. Please check your connection." : "Registration failed. Please try again.")
       );
     } finally {
       setLoading(false);
@@ -243,11 +258,7 @@ export default function Login() {
               : isLogin
               ? "Sign In"
               : `Register as ${
-                  roles
-                    .find((r) => r.value === form.role)
-                    ?.label.split(" ")
-                    .slice(1)
-                    .join(" ")
+                  roles.find((r) => r.value === form.role)?.label?.split(" ").slice(1).join(" ") || "User"
                 }`}
           </button>
         </form>

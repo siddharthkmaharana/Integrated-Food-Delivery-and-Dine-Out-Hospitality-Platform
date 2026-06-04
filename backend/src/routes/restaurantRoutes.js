@@ -4,7 +4,9 @@ import {
     getRestaurants,
     getRestaurantById,
     createRestaurant,
-    updateRestaurant
+    updateRestaurant,
+    deleteRestaurant,
+    getRecommendations
 } from '../controllers/restaurantController.js';
 import {
     getMenuItems,
@@ -17,14 +19,16 @@ const router = express.Router();
 
 // Restaurant routes
 router.get('/', getRestaurants);
+router.get('/recommendations', protect, getRecommendations);
 router.get('/:id', getRestaurantById);
-router.post('/', protect, authorize('restaurant'), createRestaurant);
-router.put('/:id', protect, authorize('restaurant'), updateRestaurant);
+router.post('/', protect, authorize('restaurant', 'admin'), createRestaurant);
+router.put('/:id', protect, authorize('restaurant', 'admin'), updateRestaurant);
+router.delete('/:id', protect, authorize('admin'), deleteRestaurant);
 
 // Menu routes
 router.get('/:id/menu', getMenuItems);  
-router.post('/:id/menu', protect, authorize('restaurant'), addMenuItem);
-router.put('/:id/menu/:itemId', protect, authorize('restaurant'), updateMenuItem);
-router.delete('/:id/menu/:itemId', protect, authorize('restaurant'), deleteMenuItem);
+router.post('/:id/menu', protect, authorize('restaurant', 'admin'), addMenuItem);
+router.put('/:id/menu/:itemId', protect, authorize('restaurant', 'admin'), updateMenuItem);
+router.delete('/:id/menu/:itemId', protect, authorize('restaurant', 'admin'), deleteMenuItem);
 
 export default router;

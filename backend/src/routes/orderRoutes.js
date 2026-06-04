@@ -7,7 +7,9 @@ import {
   getAllOrders,
   getOrderById,
   getOrdersByUser,
-  updateOrder
+  updateOrder,
+  acceptOrder,
+  rejectOrder
 } from '../controllers/orderController.js';
 import { protect, authorize } from '../middleware/authMiddleware.js';
 
@@ -20,6 +22,8 @@ router.get('/:id', protect, getOrderById);
 router.post('/', protect, createOrder);
 router.post('/:id/pay', protect, payOrder);
 router.put('/:id', protect, updateOrder);
-router.put('/:id/status', protect, authorize('restaurant', 'courier'), updateOrderStatus);
+router.put('/:id/status', protect, authorize('restaurant', 'courier', 'admin'), updateOrderStatus);
+router.post('/:id/accept', protect, authorize('courier'), acceptOrder);
+router.post('/:id/reject', protect, authorize('courier'), rejectOrder);
 
 export default router;

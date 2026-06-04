@@ -2,17 +2,58 @@ import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { Star, Clock, Bike } from "lucide-react";
 
+// ── Time-based Open/Closed logic ─────────────────────────────────────────────
+// Restaurants are open 8:00 AM – 11:00 PM every day (IST)
+const OPEN_HOUR  = 8;   // 8:00 AM
+const CLOSE_HOUR = 23;  // 11:00 PM
+
+function isRestaurantOpen() {
+  const now = new Date();
+  
+  // Use Intl to get the hour and minute in IST reliably
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Asia/Kolkata',
+    hour: 'numeric',
+    minute: 'numeric',
+    hour12: false
+  });
+  
+  const parts = formatter.formatToParts(now);
+  const hourString = parts.find(p => p.type === 'hour').value;
+  const minuteString = parts.find(p => p.type === 'minute').value;
+  
+  const hour = parseInt(hourString, 10);
+  const minute = parseInt(minuteString, 10);
+
+  // Open from 08:00 to 22:59 (closes at 23:00 / 11 PM)
+  if (hour < OPEN_HOUR) return false;
+  if (hour >= CLOSE_HOUR) return false; // At 23:00 and above, it's closed
+  return true;
+}
+
+// ── Price range → rupee amount label ─────────────────────────────────────────
+const priceRangeMap = {
+  "₹":    "Under ₹150",
+  "₹₹":   "₹150–300",
+  "₹₹₹":  "₹300–600",
+  "₹₹₹₹": "Over ₹600",
+  // Handle $ variants stored in older records
+  "$":    "Under ₹150",
+  "$$":   "₹150–300",
+  "$$$":  "₹300–600",
+  "$$$$": "Over ₹600",
+};
+
 export default function RestaurantCard({ restaurant }) {
-  const priceRangeMap = { 
-    "₹": "Under ₹150", 
-    "₹₹": "₹150-300", 
-    "₹₹₹": "₹300-600", 
-    "₹₹₹₹": "Over ₹600" 
-  };
+  const open = isRestaurantOpen();
 
   const cuisineDisplay = Array.isArray(restaurant.cuisine)
     ? restaurant.cuisine.join(", ")
     : restaurant.cuisine || "";
+
+  // Resolve price range label — fallback to raw value if not in map
+  const rawPrice = restaurant.price_range || "₹₹";
+  const priceLabel = priceRangeMap[rawPrice] || priceRangeMap[rawPrice.replace(/\$/g, "₹")] || "₹150–300";
 
   return (
     <Link to={`${createPageUrl("RestaurantDetail")}?id=${restaurant._id || restaurant.id}`}>
@@ -31,9 +72,20 @@ export default function RestaurantCard({ restaurant }) {
             </div>
           )}
 
-          {restaurant.isOpen === false && (
+          {/* ── Open / Closed badge (time-based, 8 AM – 11 PM) ── */}
+          {!open && (
             <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-              <span className="bg-white text-gray-800 font-bold px-3 py-1 rounded-full text-sm">Closed</span>
+              <span className="bg-white text-gray-800 font-bold px-3 py-1 rounded-full text-sm">
+                Closed · Opens 8 AM
+              </span>
+            </div>
+          )}
+
+          {/* ── Open now indicator ── */}
+          {open && (
+            <div className="absolute bottom-3 left-3 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full flex items-center gap-1">
+              <span className="w-1.5 h-1.5 bg-white rounded-full inline-block animate-pulse" />
+              Open until 11 PM
             </div>
           )}
 
@@ -70,11 +122,11 @@ export default function RestaurantCard({ restaurant }) {
               <span>{restaurant.delivery_fee > 0 ? `₹${restaurant.delivery_fee}` : "Free"}</span>
             </div>
             <span className="text-gray-200">·</span>
-            {/* Changed $ to ₹ */}
-           <span>{restaurant.price_range?.replace(/\$/g, "₹") || "₹₹"}</span>
+            {/* ── Price range as readable amount ── */}
+            <span className="font-medium text-gray-600">{priceLabel}</span>
           </div>
         </div>
       </div>
     </Link>
   );
-}
+}

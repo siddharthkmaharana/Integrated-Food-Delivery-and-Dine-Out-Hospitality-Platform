@@ -10,12 +10,13 @@ const restaurantSchema = new mongoose.Schema({
   cuisine: [{ type: String }],
   rating: { type: Number, default: 0, min: 0, max: 5 },
   totalReviews: { type: Number, default: 0 },
-  isOpen: { type: Boolean, default: true },
+  is_open: { type: Boolean, default: true },
+  is_approved: { type: Boolean, default: false },
   address: { type: String, required: true },
   image: { type: String, default: '' },
-  delivery_time: { type: Number, default: 30 },   // ← add this
-  delivery_fee: { type: Number, default: 0 },      // ← add this
-  price_range: { type: String, default: '$$' },    // ← add this
+  delivery_time: { type: Number, default: 30 },
+  delivery_fee: { type: Number, default: 0 },
+  price_range: { type: String, default: '$$' },
   location: {
     type: { type: String, enum: ['Point'], required: true, default: 'Point' },
     coordinates: { type: [Number], required: true }

@@ -2,9 +2,11 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { api } from "@/api/client";
-import { Package, ChefHat, Bike, CheckCircle2, Clock, MapPin, Phone, Star } from "lucide-react";
+import { Package, ChefHat, Bike, CheckCircle2, Clock, MapPin, Phone, Star, Navigation2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
+import DeliveryMap from "../components/DeliveryMap";
 
 const ORDER_STEPS = [
     { status: "PENDING", label: "Order Placed", icon: Package, desc: "Your order has been placed" },
@@ -29,25 +31,46 @@ export default function OrderTracking() {
     const orderId = urlParams.get("id");
     const [order, setOrder] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [courierLoc, setCourierLoc] = useState(null);
 
     useEffect(() => {
         if (!orderId) return;
+        
+        let unsub = null;
+
         const loadOrder = async () => {
-            const orders = await api.orders.filter({ id: orderId }).catch(() => []);
-            setOrder(orders[0] || null);
-            setLoading(false);
+            try {
+                const data = await api.orders.getById(orderId);
+                const orderData = data?.data || data;
+                setOrder(orderData);
+                setLoading(false);
+
+                const status = (orderData?.status || "").toUpperCase();
+                if (status && status !== "DELIVERED" && status !== "CANCELLED") {
+                    unsub = api.orders.subscribeOrder(
+                        orderId,
+                        (event) => {
+                            if (event.orderId === orderId || event.id === orderId) {
+                                if (event.data) setOrder(event.data?.data || event.data);
+                                else setOrder(prev => prev ? { ...prev, status: event.status } : null);
+                            }
+                        },
+                        (locEvent) => {
+                            setCourierLoc(locEvent.coordinates);
+                        }
+                    );
+                }
+            } catch (err) {
+                setOrder(null);
+                setLoading(false);
+            }
         };
+        
         loadOrder();
 
-        // Subscribe to real-time updates
-        const unsub = api.orders.subscribeOrder(orderId, event => {
-            if (event.orderId === orderId || event.id === orderId) {
-                // Since event might just have status, we need to merge or refetch
-                if (event.data) setOrder(event.data);
-                else setOrder(prev => ({ ...prev, status: event.status }));
-            }
-        });
-        return unsub;
+        return () => {
+            if (unsub) unsub();
+        };
     }, [orderId]);
 
     if (loading) return (
@@ -56,7 +79,18 @@ export default function OrderTracking() {
         </div>
     );
     if (!order) return (
-        <div className="min-h-screen flex items-center justify-center text-gray-500">Order not found.</div>
+        <div className="min-h-screen flex flex-col items-center justify-center text-gray-500 gap-4">
+            <Package className="w-12 h-12 text-gray-300" />
+            <div className="text-center">
+                <p className="font-bold text-lg text-gray-900">Order Not Found</p>
+                <p className="text-sm text-gray-400 mt-1">We couldn't find the order you're looking for.</p>
+            </div>
+            <Link to={createPageUrl("Profile")}>
+                <Button className="bg-orange-500 hover:bg-orange-600 text-white rounded-xl px-8">
+                    Back to My Orders
+                </Button>
+            </Link>
+        </div>
     );
 
     const currentStep = STATUS_INDEX[order.status] ?? 0;
@@ -89,11 +123,51 @@ export default function OrderTracking() {
                                     <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
                                 </div>
                             </div>
-                            <h1 className="text-2xl font-black text-gray-900">Order #{order.id?.slice(-6).toUpperCase()}</h1>
+                            <h1 className="text-2xl font-black text-gray-900">Order #{(order._id || order.id)?.slice(-6).toUpperCase()}</h1>
                             <p className="text-gray-500 mt-1">Estimated delivery: {order.estimated_time || 35} min</p>
                         </>
                     )}
                 </div>
+
+                {/* Live Delivery Map */}
+                {(order.status === "PREPARING" || order.status === "READY_FOR_PICKUP" || order.status === "COURIER_ASSIGNED" || order.status === "PICKED_UP" || order.status === "out_for_delivery" || order.status === "DELIVERING") && (
+                    <div className="bg-white rounded-3xl shadow-lg border border-orange-100 p-1 mb-6 overflow-hidden">
+                        <div className="bg-gray-100 h-64 rounded-2xl relative overflow-hidden">
+                            <DeliveryMap 
+                                status={order.status}
+                                restaurantLoc={order.restaurant?.location?.coordinates && (order.restaurant.location.coordinates[0] !== 0 || order.restaurant.location.coordinates[1] !== 0) ? { lng: order.restaurant.location.coordinates[0], lat: order.restaurant.location.coordinates[1] } : { lat: 18.5204, lng: 73.8567 }}
+                                customerLoc={order.customer?.location?.coordinates && (order.customer.location.coordinates[0] !== 0 || order.customer.location.coordinates[1] !== 0) ? { lng: order.customer.location.coordinates[0], lat: order.customer.location.coordinates[1] } : { 
+                                    lat: order.restaurant?.location?.coordinates ? order.restaurant.location.coordinates[1] - 0.02 : 12.9516, 
+                                    lng: order.restaurant?.location?.coordinates ? order.restaurant.location.coordinates[0] + 0.02 : 77.6146 
+                                }}
+                                courierLoc={courierLoc}
+                            />
+                            
+                            {!courierLoc && (
+                                <div className="absolute inset-0 z-20 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center">
+                                    <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center mx-auto mb-2 shadow-sm">
+                                        <RefreshCw className="w-6 h-6 text-orange-500 animate-spin" />
+                                    </div>
+                                    <p className="text-xs font-bold text-gray-500">Connecting to live GPS...</p>
+                                </div>
+                            )}
+                        </div>
+                        <div className="p-4 flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-full bg-orange-50 flex items-center justify-center">
+                                    <Navigation2 className="w-5 h-5 text-orange-600" />
+                                </div>
+                                <div>
+                                    <p className="text-sm font-black text-gray-900">Live Delivery Tracking</p>
+                                    <p className="text-[11px] text-gray-500 font-medium">
+                                        {courierLoc ? `Lat: ${courierLoc.lat.toFixed(4)}, Lng: ${courierLoc.lng.toFixed(4)}` : 'Awaiting courier signal...'}
+                                    </p>
+                                </div>
+                            </div>
+                            <Badge className="bg-green-500 hover:bg-green-500 text-white rounded-lg">ACTIVE</Badge>
+                        </div>
+                    </div>
+                )}
 
                 {/* Status Timeline */}
                 {!isCancelled && (

@@ -4,10 +4,16 @@ import RestaurantCard from "../components/home/RestaurantCard";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { api } from "../api/client";
+import { useLocation } from "@/lib/LocationContext";
 
 const CUISINES = ["All", "Italian", "Indian", "Chinese", "Japanese", "Mexican", "American", "Thai", "Mediterranean"];
 const RATINGS = [{ label: "4.5+", value: 4.5 }, { label: "4.0+", value: 4.0 }, { label: "3.5+", value: 3.5 }];
-const PRICE_RANGES = ["₹", "₹₹", "₹₹₹", "₹₹₹₹"];
+const PRICE_RANGES = [
+    { label: "Under ₹150", value: "₹" },
+    { label: "₹150–300", value: "₹₹" },
+    { label: "₹300–600", value: "₹₹₹" },
+    { label: "Over ₹600", value: "₹₹₹₹" },
+];
 const SORT_OPTIONS = [
     { label: "Relevance", value: "relevance" },
     { label: "Rating", value: "rating" },
@@ -20,6 +26,7 @@ export default function Restaurants() {
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
     const [showFilters, setShowFilters] = useState(false);
+    const { coords } = useLocation();
     const [filters, setFilters] = useState({
         cuisine: "All",
         minRating: 0,
@@ -28,11 +35,11 @@ export default function Restaurants() {
     });
 
     useEffect(() => {
-        api.restaurants.list("-rating", 50)
+        setLoading(true);
+        api.restaurants.list(coords, "-rating", 100)
             .then(data => {
-                if (Array.isArray(data)) {
-                    setRestaurants(data.filter(r => r.is_approved !== false));
-                }
+                const restaurantList = data.data || data || [];
+                setRestaurants(restaurantList.filter(r => r.is_approved !== false));
                 setLoading(false);
             })
             .catch(err => {
@@ -40,7 +47,7 @@ export default function Restaurants() {
                 setRestaurants([]);
                 setLoading(false);
             });
-    }, []);
+    }, [coords]);
 
     const getFiltered = () => {
         let result = [...restaurants];
@@ -65,7 +72,7 @@ export default function Restaurants() {
             result = result.filter(r => (r.rating || 0) >= filters.minRating);
         }
         if (filters.priceRanges.length > 0) {
-            result = result.filter(r => filters.priceRanges.includes(r.price_range));
+            result = result.filter(r => filters.priceRanges.includes(r.price_range || "₹₹"));
         }
         if (filters.sortBy === "rating") result.sort((a, b) => (b.rating || 0) - (a.rating || 0));
         else if (filters.sortBy === "delivery_time") result.sort((a, b) => (a.delivery_time || 30) - (b.delivery_time || 30));
@@ -79,7 +86,7 @@ export default function Restaurants() {
     const togglePrice = (p) => {
         setFilters(f => ({
             ...f,
-            priceRanges: f.priceRanges.includes(p) ? f.priceRanges.filter(x => x !== p) : [...f.priceRanges, p]
+            priceRanges: f.priceRanges.includes(p.value) ? f.priceRanges.filter(x => x !== p.value) : [...f.priceRanges, p.value]
         }));
     };
 
@@ -174,12 +181,12 @@ export default function Restaurants() {
                                 <div className="flex gap-2">
                                     {PRICE_RANGES.map(p => (
                                         <button
-                                            key={p}
+                                            key={p.value}
                                             onClick={() => togglePrice(p)}
-                                            className={`px-3 py-1.5 rounded-xl text-sm font-bold border transition-all ${filters.priceRanges.includes(p) ? "bg-green-500 border-green-500 text-white" : "border-gray-200 text-gray-600"
+                                            className={`px-3 py-1.5 rounded-xl text-sm font-bold border transition-all ${filters.priceRanges.includes(p.value) ? "bg-green-500 border-green-500 text-white" : "border-gray-200 text-gray-600"
                                                 }`}
                                         >
-                                            {p}
+                                            {p.label}
                                         </button>
                                     ))}
                                 </div>
@@ -223,7 +230,7 @@ export default function Restaurants() {
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 pb-16">
-                        {filtered.map(r => <RestaurantCard key={r.id} restaurant={r} />)}
+                        {filtered.map(r => <RestaurantCard key={r._id || r.id} restaurant={r} />)}
                     </div>
                 )}
             </div>
