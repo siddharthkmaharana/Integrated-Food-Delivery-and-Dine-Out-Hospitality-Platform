@@ -34,10 +34,25 @@ export default function Layout({ children, currentPageName }) {
     }, []);
 
     const getLocation = () => {
+        const fallbackToIP = async () => {
+            try {
+                const res = await fetch("https://ipapi.co/json/");
+                const data = await res.json();
+                if (data.city && data.region) {
+                    setLocation(`${data.city}, ${data.region}`);
+                } else {
+                    setLocation("Odisha, India");
+                }
+            } catch {
+                setLocation("Odisha, India");
+            }
+        };
+
         if (!navigator.geolocation) {
-            setLocation("Location unavailable");
+            fallbackToIP();
             return;
         }
+
         navigator.geolocation.getCurrentPosition(
             async (position) => {
                 const { latitude, longitude } = position.coords;
@@ -55,11 +70,16 @@ export default function Layout({ children, currentPageName }) {
                     const state = data.address?.state || "";
                     setLocation(`${city}, ${state}`);
                 } catch {
-                    setLocation("Location found");
+                    fallbackToIP();
                 }
             },
             () => {
-                setLocation("Bengaluru, Karnataka");
+                fallbackToIP();
+            },
+            {
+                enableHighAccuracy: true,
+                timeout: 5000,
+                maximumAge: 0
             }
         );
     };
