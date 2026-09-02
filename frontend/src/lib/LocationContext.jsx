@@ -16,6 +16,9 @@ export const LocationProvider = ({ children }) => {
     setAddress(newAddress);
     localStorage.setItem("user_coords", JSON.stringify(newCoords));
     localStorage.setItem("user_address", newAddress);
+    localStorage.setItem("user_latitude", newCoords.latitude);
+    localStorage.setItem("user_longitude", newCoords.longitude);
+    localStorage.setItem("user_location_name", newAddress);
     
     // Trigger a refresh event for components that might not be using the context
     window.dispatchEvent(new CustomEvent("locationUpdated", { detail: { coords: newCoords, address: newAddress } }));

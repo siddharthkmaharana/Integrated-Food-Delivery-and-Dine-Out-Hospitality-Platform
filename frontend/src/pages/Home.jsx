@@ -36,7 +36,7 @@ export default function Home() {
   const [recLoading, setRecLoading] = useState(false);
   const [basedOn, setBasedOn] = useState([]);
 
-  useEffect(() => {
+  const fetchRestaurants = () => {
     setLoading(true);
     api.restaurants.list(coords)
       .then(data => {
@@ -58,6 +58,14 @@ export default function Home() {
         setRecLoading(false);
       })
       .catch(() => setRecLoading(false));
+  };
+
+  useEffect(() => {
+    fetchRestaurants();
+    window.addEventListener("locationUpdated", fetchRestaurants);
+    return () => {
+      window.removeEventListener("locationUpdated", fetchRestaurants);
+    };
   }, [coords]);
 
   const filtered = restaurants.filter(r => {
@@ -96,8 +104,6 @@ export default function Home() {
           ))}
         </div>
       </div>
-
-
 
       {/* Recommendations Section */}
       {recommendations.length > 0 && (

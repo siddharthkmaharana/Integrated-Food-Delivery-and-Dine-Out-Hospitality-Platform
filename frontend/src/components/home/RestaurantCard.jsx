@@ -20,14 +20,11 @@ function isRestaurantOpen() {
   
   const parts = formatter.formatToParts(now);
   const hourString = parts.find(p => p.type === 'hour').value;
-  const minuteString = parts.find(p => p.type === 'minute').value;
-  
   const hour = parseInt(hourString, 10);
-  const minute = parseInt(minuteString, 10);
 
   // Open from 08:00 to 22:59 (closes at 23:00 / 11 PM)
   if (hour < OPEN_HOUR) return false;
-  if (hour >= CLOSE_HOUR) return false; // At 23:00 and above, it's closed
+  if (hour >= CLOSE_HOUR) return false;
   return true;
 }
 
@@ -37,7 +34,6 @@ const priceRangeMap = {
   "₹₹":   "₹150–300",
   "₹₹₹":  "₹300–600",
   "₹₹₹₹": "Over ₹600",
-  // Handle $ variants stored in older records
   "$":    "Under ₹150",
   "$$":   "₹150–300",
   "$$$":  "₹300–600",
@@ -45,7 +41,8 @@ const priceRangeMap = {
 };
 
 export default function RestaurantCard({ restaurant }) {
-  const open = isRestaurantOpen();
+  const timeOpen = isRestaurantOpen();
+  const isOpen = (restaurant.is_open !== false && restaurant.isOpen !== false) && timeOpen;
 
   const cuisineDisplay = Array.isArray(restaurant.cuisine)
     ? restaurant.cuisine.join(", ")
@@ -65,6 +62,10 @@ export default function RestaurantCard({ restaurant }) {
               src={restaurant.image}
               alt={restaurant.name}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+              onError={(e) => {
+                e.target.onerror = null;
+                e.target.src = "https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&q=80&w=1000";
+              }}
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-5xl">
@@ -72,17 +73,17 @@ export default function RestaurantCard({ restaurant }) {
             </div>
           )}
 
-          {/* ── Open / Closed badge (time-based, 8 AM – 11 PM) ── */}
-          {!open && (
+          {/* ── Open / Closed badge ── */}
+          {!isOpen && (
             <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
               <span className="bg-white text-gray-800 font-bold px-3 py-1 rounded-full text-sm">
-                Closed · Opens 8 AM
+                Closed {!timeOpen ? "· Opens 8 AM" : ""}
               </span>
             </div>
           )}
 
           {/* ── Open now indicator ── */}
-          {open && (
+          {isOpen && (
             <div className="absolute bottom-3 left-3 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full flex items-center gap-1">
               <span className="w-1.5 h-1.5 bg-white rounded-full inline-block animate-pulse" />
               Open until 11 PM
@@ -122,11 +123,10 @@ export default function RestaurantCard({ restaurant }) {
               <span>{restaurant.delivery_fee > 0 ? `₹${restaurant.delivery_fee}` : "Free"}</span>
             </div>
             <span className="text-gray-200">·</span>
-            {/* ── Price range as readable amount ── */}
             <span className="font-medium text-gray-600">{priceLabel}</span>
           </div>
         </div>
       </div>
     </Link>
   );
-}
+}

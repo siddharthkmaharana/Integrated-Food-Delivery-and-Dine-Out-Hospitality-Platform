@@ -158,7 +158,15 @@ export default function RestaurantDetail() {
             {/* Hero */}
             <div className="relative h-64 md:h-80 bg-gradient-to-br from-orange-100 to-red-100 overflow-hidden">
                 {restaurant.image ? (
-                    <img src={restaurant.image} alt={restaurant.name} className="w-full h-full object-cover" />
+                    <img 
+                        src={restaurant.image} 
+                        alt={restaurant.name} 
+                        className="w-full h-full object-cover" 
+                        onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = "https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&q=80&w=1000";
+                        }}
+                    />
                 ) : (
                     <div className="w-full h-full flex items-center justify-center text-8xl">🍽️</div>
                 )}

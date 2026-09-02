@@ -214,10 +214,11 @@ export default function Layout({ children, currentPageName }) {
                                                 <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Popular Cities</div>
                                                 <div className="flex flex-wrap gap-2">
                                                     {[
+                                                        { name: "Bhubaneswar", lat: 20.2961, lon: 85.8245 },
                                                         { name: "Pune", lat: 18.5204, lon: 73.8567 },
                                                         { name: "Mumbai", lat: 19.0760, lon: 72.8777 },
                                                         { name: "Delhi", lat: 28.6139, lon: 77.2090 },
-                                                        { name: "Bangalore", lat: 12.9716, lon: 77.5946 },
+                                                        { name: "Bengaluru", lat: 12.9716, lon: 77.5946 },
                                                         { name: "Hyderabad", lat: 17.3850, lon: 78.4867 }
                                                     ].map(city => (
                                                         <button
@@ -250,7 +251,7 @@ export default function Layout({ children, currentPageName }) {
                                     className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
                                         currentPageName === link.page
                                             ? "bg-orange-50 text-orange-600"
-                                            : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                                             : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
                                     }`}
                                 >
                                     {link.name}

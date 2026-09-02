@@ -57,17 +57,24 @@ export default function TableBooking() {
         requests: "",
     });
 
-    useEffect(() => {
+    const fetchRestaurants = () => {
         setLoading(true);
-        // Match Home page logic: fetch based on current coordinates only
-        api.restaurants.list(coords)
+        api.restaurants.list(coords, "-rating", 50)
             .then(data => {
                 const list = data.data || data || [];
                 setRestaurants(list.filter(r => r.is_approved !== false));
             })
             .catch(console.error)
             .finally(() => setLoading(false));
+    };
+
+    useEffect(() => {
+        fetchRestaurants();
         api.auth.me().then(setUser).catch(() => { });
+        window.addEventListener("locationUpdated", fetchRestaurants);
+        return () => {
+            window.removeEventListener("locationUpdated", fetchRestaurants);
+        };
     }, [coords]);
 
     useEffect(() => {
@@ -88,7 +95,6 @@ export default function TableBooking() {
                 guests: form.guests,
                 specialRequests: form.requests,
                 status: "PENDING",
-                // Extra fields allowed by schema (if any) or ignored:
                 user_email: user.email,
                 user_name: user.full_name || user.email,
                 restaurant_name: selected.name,
@@ -166,7 +172,15 @@ export default function TableBooking() {
                                         >
                                             <div className="h-48 bg-gradient-to-br from-orange-50 to-red-50 overflow-hidden relative">
                                                 {r.image ? (
-                                                    <img src={r.image} alt={r.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                                                    <img 
+                                                        src={r.image} 
+                                                        alt={r.name} 
+                                                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" 
+                                                        onError={(e) => {
+                                                            e.target.onerror = null;
+                                                            e.target.src = "https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&q=80&w=1000";
+                                                        }}
+                                                    />
                                                 ) : (
                                                     <div className="w-full h-full flex items-center justify-center text-5xl">🍽️</div>
                                                 )}
@@ -227,8 +241,19 @@ export default function TableBooking() {
 
                         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-6">
                             <div className="h-40 bg-gradient-to-br from-purple-100 to-indigo-100 overflow-hidden">
-                                {selected.image ? <img src={selected.image} alt={selected.name} className="w-full h-full object-cover" /> :
-                                    <div className="w-full h-full flex items-center justify-center text-5xl">🍽️</div>}
+                                {selected.image ? (
+                                    <img 
+                                        src={selected.image} 
+                                        alt={selected.name} 
+                                        className="w-full h-full object-cover" 
+                                        onError={(e) => {
+                                            e.target.onerror = null;
+                                            e.target.src = "https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&q=80&w=1000";
+                                        }}
+                                    />
+                                ) : (
+                                    <div className="w-full h-full flex items-center justify-center text-5xl">🍽️</div>
+                                )}
                             </div>
                             <div className="p-4">
                                 <h2 className="font-black text-gray-900 text-xl">{selected.name}</h2>

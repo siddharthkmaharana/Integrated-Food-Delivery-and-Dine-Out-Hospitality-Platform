@@ -59,23 +59,52 @@ export const api = {
   },
 
   restaurants: {
-    list: async (coords = {}, sort, limit) => {
-      const params = { ...coords, sort, limit };
-      if (params.latitude) { params.lat = params.latitude; delete params.latitude; }
-      if (params.longitude) { params.lng = params.longitude; delete params.longitude; }
-      
+    list: async (arg1, arg2, arg3) => {
+      let params = {};
+      if (typeof arg1 === "object" && arg1 !== null) {
+        params = { ...arg1 };
+        if (arg2) params.sort = arg2;
+        if (arg3) params.limit = arg3;
+      } else {
+        if (arg1) params.sort = arg1;
+        if (arg2) params.limit = arg2;
+        if (arg3 && typeof arg3 === "object") Object.assign(params, arg3);
+      }
+
+      const lat = params.lat || params.latitude || localStorage.getItem("user_latitude");
+      const lng = params.lng || params.longitude || localStorage.getItem("user_longitude");
+      if (lat) {
+        params.lat = lat;
+        params.latitude = lat;
+      }
+      if (lng) {
+        params.lng = lng;
+        params.longitude = lng;
+      }
+
       const { data } = await apiClient.get("/restaurants", { params });
-      return data;
+      return data?.data || data;
     },
 
-    filter: async (params, sort, limit) => {
+    filter: async (params = {}, sort, limit) => {
       if (params.id) {
         const { data } = await apiClient.get(`/restaurants/${params.id}`);
         const actual = data?.data || data;
         return [actual];
       }
+      const lat = params.lat || params.latitude || localStorage.getItem("user_latitude");
+      const lng = params.lng || params.longitude || localStorage.getItem("user_longitude");
+      const queryParams = { ...params, sort, limit };
+      if (lat) {
+        queryParams.lat = lat;
+        queryParams.latitude = lat;
+      }
+      if (lng) {
+        queryParams.lng = lng;
+        queryParams.longitude = lng;
+      }
       const { data } = await apiClient.get("/restaurants", {
-        params: { ...params, sort, limit },
+        params: queryParams,
       });
       return data?.data || data;
     },
@@ -233,6 +262,10 @@ export const api = {
       const { data } = await apiClient.post("/reviews", payload);
       return data;
     },
+<<<<<<< HEAD
+=======
+
+>>>>>>> week4/siddharth
     getSuggestions: async (orderId) => {
       const { data } = await apiClient.get(`/reviews/suggestions/${orderId}`);
       return data;

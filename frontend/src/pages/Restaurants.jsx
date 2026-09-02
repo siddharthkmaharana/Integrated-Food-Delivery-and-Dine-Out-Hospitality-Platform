@@ -34,7 +34,7 @@ export default function Restaurants() {
         sortBy: "relevance",
     });
 
-    useEffect(() => {
+    const fetchRestaurants = () => {
         setLoading(true);
         api.restaurants.list(coords, "-rating", 100)
             .then(data => {
@@ -47,6 +47,14 @@ export default function Restaurants() {
                 setRestaurants([]);
                 setLoading(false);
             });
+    };
+
+    useEffect(() => {
+        fetchRestaurants();
+        window.addEventListener("locationUpdated", fetchRestaurants);
+        return () => {
+            window.removeEventListener("locationUpdated", fetchRestaurants);
+        };
     }, [coords]);
 
     const getFiltered = () => {
