@@ -27,7 +27,8 @@ export default function Restaurants() {
         sortBy: "relevance",
     });
 
-    useEffect(() => {
+    const fetchRestaurants = () => {
+        setLoading(true);
         api.restaurants.list("-rating", 50)
             .then(data => {
                 if (Array.isArray(data)) {
@@ -40,6 +41,14 @@ export default function Restaurants() {
                 setRestaurants([]);
                 setLoading(false);
             });
+    };
+
+    useEffect(() => {
+        fetchRestaurants();
+        window.addEventListener("locationUpdated", fetchRestaurants);
+        return () => {
+            window.removeEventListener("locationUpdated", fetchRestaurants);
+        };
     }, []);
 
     const getFiltered = () => {

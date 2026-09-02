@@ -29,7 +29,8 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
 
-  useEffect(() => {
+  const fetchRestaurants = () => {
+    setLoading(true);
     api.restaurants.list()
       .then(data => {
         setRestaurants(data.data || data || []);
@@ -39,6 +40,14 @@ export default function Home() {
         console.error("Failed to load restaurants", err);
         setLoading(false);
       });
+  };
+
+  useEffect(() => {
+    fetchRestaurants();
+    window.addEventListener("locationUpdated", fetchRestaurants);
+    return () => {
+      window.removeEventListener("locationUpdated", fetchRestaurants);
+    };
   }, []);
 
   const filtered = restaurants.filter(r => {

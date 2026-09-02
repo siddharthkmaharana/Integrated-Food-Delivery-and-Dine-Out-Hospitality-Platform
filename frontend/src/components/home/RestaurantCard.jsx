@@ -24,6 +24,10 @@ export default function RestaurantCard({ restaurant }) {
               src={restaurant.image}
               alt={restaurant.name}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+              onError={(e) => {
+                e.target.onerror = null;
+                e.target.src = "https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&q=80&w=1000";
+              }}
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-5xl">

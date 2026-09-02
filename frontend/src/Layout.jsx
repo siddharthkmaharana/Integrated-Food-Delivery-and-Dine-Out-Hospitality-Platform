@@ -19,12 +19,16 @@ export default function Layout({ children, currentPageName }) {
     const [user, setUser] = useState(null);
     const [cartCount, setCartCount] = useState(0);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-    const [location, setLocation] = useState("Detecting location...");
+    const [location, setLocation] = useState(() => {
+        return localStorage.getItem("user_location_name") || "Detecting location...";
+    });
 
     useEffect(() => {
         api.auth.me().then(setUser).catch(() => { });
         updateCartCount();
-        getLocation();
+        if (!localStorage.getItem("user_location_name")) {
+            getLocation();
+        }
         window.addEventListener("storage", updateCartCount);
         window.addEventListener("cartUpdated", updateCartCount);
         return () => {
@@ -39,13 +43,30 @@ export default function Layout({ children, currentPageName }) {
                 const res = await fetch("https://ipapi.co/json/");
                 const data = await res.json();
                 if (data.city && data.region) {
-                    setLocation(`${data.city}, ${data.region}`);
+                    const locName = `${data.city}, ${data.region}`;
+                    setLocation(locName);
+                    localStorage.setItem("user_location_name", locName);
+                    if (data.latitude && data.longitude) {
+                        localStorage.setItem("user_latitude", data.latitude);
+                        localStorage.setItem("user_longitude", data.longitude);
+                    } else {
+                        // Fallback to Odisha coordinates
+                        localStorage.setItem("user_latitude", "20.2961");
+                        localStorage.setItem("user_longitude", "85.8245");
+                    }
                 } else {
-                    setLocation("Odisha, India");
+                    setLocation("Bhubaneswar, Odisha");
+                    localStorage.setItem("user_location_name", "Bhubaneswar, Odisha");
+                    localStorage.setItem("user_latitude", "20.2961");
+                    localStorage.setItem("user_longitude", "85.8245");
                 }
             } catch {
-                setLocation("Odisha, India");
+                setLocation("Bhubaneswar, Odisha");
+                localStorage.setItem("user_location_name", "Bhubaneswar, Odisha");
+                localStorage.setItem("user_latitude", "20.2961");
+                localStorage.setItem("user_longitude", "85.8245");
             }
+            window.dispatchEvent(new Event("locationUpdated"));
         };
 
         if (!navigator.geolocation) {
@@ -56,6 +77,8 @@ export default function Layout({ children, currentPageName }) {
         navigator.geolocation.getCurrentPosition(
             async (position) => {
                 const { latitude, longitude } = position.coords;
+                localStorage.setItem("user_latitude", latitude);
+                localStorage.setItem("user_longitude", longitude);
                 try {
                     // Use free reverse geocoding API
                     const res = await fetch(
@@ -68,10 +91,13 @@ export default function Layout({ children, currentPageName }) {
                                  data.address?.county || 
                                  "Your Location";
                     const state = data.address?.state || "";
-                    setLocation(`${city}, ${state}`);
+                    const locName = `${city}, ${state}`;
+                    setLocation(locName);
+                    localStorage.setItem("user_location_name", locName);
                 } catch {
                     fallbackToIP();
                 }
+                window.dispatchEvent(new Event("locationUpdated"));
             },
             () => {
                 fallbackToIP();
@@ -82,6 +108,14 @@ export default function Layout({ children, currentPageName }) {
                 maximumAge: 0
             }
         );
+    };
+
+    const handleManualLocation = (name, lat, lng) => {
+        setLocation(name);
+        localStorage.setItem("user_location_name", name);
+        localStorage.setItem("user_latitude", lat);
+        localStorage.setItem("user_longitude", lng);
+        window.dispatchEvent(new Event("locationUpdated"));
     };
 
     const updateCartCount = () => {
@@ -121,18 +155,57 @@ export default function Layout({ children, currentPageName }) {
                             </span>
                         </Link>
 
-                        {/* Location pill — now real time */}
-                        <div
-                            onClick={getLocation}
-                            className="hidden md:flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded-full px-3 py-1.5 cursor-pointer hover:border-orange-300 transition-colors"
-                            title="Click to refresh location"
-                        >
-                            <MapPin className="w-3.5 h-3.5 text-orange-500" />
-                            <span className="text-sm font-medium text-gray-700 max-w-[180px] truncate">
-                                {location}
-                            </span>
-                            <ChevronDown className="w-3 h-3 text-gray-400" />
-                        </div>
+                        {/* Location selector dropdown */}
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <div
+                                    className="hidden md:flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded-full px-3 py-1.5 cursor-pointer hover:border-orange-300 transition-colors"
+                                    title="Click to change location"
+                                >
+                                    <MapPin className="w-3.5 h-3.5 text-orange-500" />
+                                    <span className="text-sm font-medium text-gray-700 max-w-[180px] truncate">
+                                        {location}
+                                    </span>
+                                    <ChevronDown className="w-3 h-3 text-gray-400" />
+                                </div>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="start" className="w-56 rounded-2xl shadow-xl border-gray-100 p-1">
+                                <div className="px-3 py-2 border-b border-gray-100 mb-1">
+                                    <p className="font-bold text-xs text-gray-400 uppercase tracking-wider">Select Location</p>
+                                </div>
+                                <DropdownMenuItem 
+                                    onClick={() => handleManualLocation("Bhubaneswar, Odisha", 20.2961, 85.8245)}
+                                    className="rounded-xl cursor-pointer"
+                                >
+                                    Bhubaneswar, Odisha
+                                </DropdownMenuItem>
+                                <DropdownMenuItem 
+                                    onClick={() => handleManualLocation("Bengaluru, Karnataka", 12.9716, 77.5946)}
+                                    className="rounded-xl cursor-pointer"
+                                >
+                                    Bengaluru, Karnataka
+                                </DropdownMenuItem>
+                                <DropdownMenuItem 
+                                    onClick={() => handleManualLocation("Mumbai, Maharashtra", 19.0760, 72.8777)}
+                                    className="rounded-xl cursor-pointer"
+                                >
+                                    Mumbai, Maharashtra
+                                </DropdownMenuItem>
+                                <DropdownMenuItem 
+                                    onClick={() => handleManualLocation("New Delhi, Delhi", 28.6139, 77.2090)}
+                                    className="rounded-xl cursor-pointer"
+                                >
+                                    New Delhi, Delhi
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem 
+                                    onClick={getLocation}
+                                    className="rounded-xl cursor-pointer text-orange-600 font-medium"
+                                >
+                                    <MapPin className="w-4 h-4 mr-1.5" /> Detect My Location
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
 
                         {/* Nav Links */}
                         <div className="hidden md:flex items-center gap-1">

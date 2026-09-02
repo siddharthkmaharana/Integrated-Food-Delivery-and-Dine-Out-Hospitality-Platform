@@ -22,13 +22,21 @@ export default function TableBooking() {
         requests: "",
     });
 
-    useEffect(() => {
+    const fetchRestaurants = () => {
         api.restaurants.list("-rating", 20)
             .then(data => {
                 if(Array.isArray(data)) setRestaurants(data.filter(r => r.is_approved !== false));
             })
             .catch(console.error);
+    };
+
+    useEffect(() => {
+        fetchRestaurants();
         api.auth.me().then(setUser).catch(() => { });
+        window.addEventListener("locationUpdated", fetchRestaurants);
+        return () => {
+            window.removeEventListener("locationUpdated", fetchRestaurants);
+        };
     }, []);
 
     useEffect(() => {

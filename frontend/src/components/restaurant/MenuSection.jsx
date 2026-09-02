@@ -29,7 +29,15 @@ export default function MenuSection({ category, items, getItemQty, updateCart })
 
                             {item.image && (
                                 <div className="w-20 h-20 rounded-xl overflow-hidden flex-shrink-0">
-                                    <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                                    <img 
+                                        src={item.image} 
+                                        alt={item.name} 
+                                        className="w-full h-full object-cover" 
+                                        onError={(e) => {
+                                            e.target.onerror = null;
+                                            e.target.src = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&q=80&w=200";
+                                        }}
+                                    />
                                 </div>
                             )}
 

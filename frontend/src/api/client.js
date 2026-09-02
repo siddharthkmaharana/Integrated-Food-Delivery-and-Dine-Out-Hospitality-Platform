@@ -60,16 +60,20 @@ export const api = {
   },
 
   restaurants: {
-    list: async (sort, limit) => {
+    list: async (sort, limit, extraParams = {}) => {
+      const latitude = extraParams.latitude || localStorage.getItem("user_latitude");
+      const longitude = extraParams.longitude || localStorage.getItem("user_longitude");
       const { data } = await apiClient.get("/restaurants", {
-        params: { sort, limit },
+        params: { sort, limit, latitude, longitude, ...extraParams },
       });
       return data;
     },
 
     filter: async (params, sort, limit) => {
+      const latitude = params?.latitude || localStorage.getItem("user_latitude");
+      const longitude = params?.longitude || localStorage.getItem("user_longitude");
       const { data } = await apiClient.get("/restaurants", {
-        params: { ...params, sort, limit },
+        params: { ...params, sort, limit, latitude, longitude },
       });
       return data;
     },
