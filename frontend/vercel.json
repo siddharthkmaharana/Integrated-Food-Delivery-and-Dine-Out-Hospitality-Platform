@@ -2,11 +2,11 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "http://13.61.32.221:5000/api/$1"
+      "destination": "https://integrated-food-delivery-and-dine-out-rgmc.onrender.com/api/$1"
     },
     {
       "source": "/socket.io/(.*)",
-      "destination": "http://13.61.32.221:5000/socket.io/$1"
+      "destination": "https://integrated-food-delivery-and-dine-out-rgmc.onrender.com/socket.io/$1"
     },
     {
       "source": "/(.*)",
