@@ -28,6 +28,7 @@ import { useLocation } from "@/lib/LocationContext";
 export default function Home() {
   const [restaurants, setRestaurants] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const { coords } = useLocation();
@@ -38,6 +39,7 @@ export default function Home() {
 
   const fetchRestaurants = () => {
     setLoading(true);
+    setError(null);
     api.restaurants.list(coords)
       .then(data => {
         const resList = data.data || data || [];
@@ -46,6 +48,7 @@ export default function Home() {
       })
       .catch((err) => {
         console.error("Failed to load restaurants", err);
+        setError("Unable to connect to backend server. Please verify your backend API is online.");
         setLoading(false);
       });
 
@@ -163,6 +166,15 @@ export default function Home() {
                 </div>
               </div>
             ))}
+          </div>
+        ) : error ? (
+          <div className="text-center py-16 bg-white rounded-2xl border border-orange-100 p-8 shadow-sm">
+            <div className="text-5xl mb-3">⚠️</div>
+            <h3 className="text-xl font-bold text-gray-800">Connection Error</h3>
+            <p className="text-gray-500 mt-2 max-w-md mx-auto text-sm">{error}</p>
+            <Button onClick={fetchRestaurants} className="mt-4 bg-orange-500 hover:bg-orange-600 text-white rounded-xl">
+              Retry Connection
+            </Button>
           </div>
         ) : filtered.length === 0 ? (
           <div className="text-center py-20">

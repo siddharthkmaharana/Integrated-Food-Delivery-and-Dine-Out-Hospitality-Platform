@@ -70,7 +70,9 @@ export default function CourierDashboard() {
     useEffect(() => {
         if (!user) return;
 
-        const socketUrl = import.meta.env.VITE_API_URL?.replace("/api", "") || "http://localhost:5000";
+        const socketUrl = import.meta.env.VITE_API_URL 
+            ? (import.meta.env.VITE_API_URL.endsWith("/api") ? import.meta.env.VITE_API_URL.slice(0, -4) : import.meta.env.VITE_API_URL)
+            : (import.meta.env.PROD ? "/" : "http://localhost:5000");
         const socket = io(socketUrl);
         socketRef.current = socket;
 

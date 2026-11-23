@@ -3,7 +3,9 @@ import Order from '../models/Order.js';
 
 const getRecommendations = async (req, res) => {
   try {
-    const { longitude, latitude } = req.query;
+    const { longitude, latitude, lng, lat } = req.query;
+    const searchLat = latitude || lat;
+    const searchLng = longitude || lng;
     const userId = req.user?._id;
 
     let favoriteCuisines = [];
@@ -31,7 +33,7 @@ const getRecommendations = async (req, res) => {
     }
 
     // Proximity search REQUIRES coordinates
-    if (!latitude || !longitude) {
+    if (!searchLat || !searchLng) {
         return res.json({ success: true, data: [], basedOn: [] });
     }
 
@@ -41,12 +43,12 @@ const getRecommendations = async (req, res) => {
         $geoNear: {
           near: {
             type: 'Point',
-            coordinates: [parseFloat(longitude), parseFloat(latitude)]
+            coordinates: [parseFloat(searchLng), parseFloat(searchLat)]
           },
           distanceField: 'distance',
           maxDistance: 20000,
           spherical: true,
-          query: { is_approved: true }
+          query: { is_approved: { $ne: false } }
         }
       },
       {
@@ -75,6 +77,8 @@ const getRestaurants = async (req, res) => {
     const {
       lng,
       lat,
+      longitude,
+      latitude,
       maxDistance = 20000, 
       cuisine,
       owner,
@@ -84,6 +88,9 @@ const getRestaurants = async (req, res) => {
       limit = 10
     } = req.query;
 
+    const searchLat = lat || latitude;
+    const searchLng = lng || longitude;
+
     // If filtering by owner or explicitly requested all, skip geoNear
     if (owner || all === 'true') {
       const query = {};
@@ -92,7 +99,7 @@ const getRestaurants = async (req, res) => {
 
       // Only include unapproved if specifically requested (Admin view)
       if (includeUnapproved !== 'true' && !owner) {
-        query.is_approved = true;
+        query.is_approved = { $ne: false };
       }
 
       const restaurants = await Restaurant.find(query)
@@ -105,7 +112,7 @@ const getRestaurants = async (req, res) => {
     }
 
     // Proximity search REQUIRES coordinates
-    if (!lat || !lng) {
+    if (!searchLat || !searchLng) {
       return res.json({ success: true, data: [], message: "Please select a location to see nearby restaurants" });
     }
 
@@ -114,12 +121,12 @@ const getRestaurants = async (req, res) => {
         $geoNear: {
           near: {
             type: 'Point',
-            coordinates: [parseFloat(lng), parseFloat(lat)]
+            coordinates: [parseFloat(searchLng), parseFloat(searchLat)]
           },
           distanceField: 'distance',
           maxDistance: parseInt(maxDistance),
           spherical: true,
-          query: { is_approved: true }
+          query: { is_approved: { $ne: false } }
         }
       },
       {
@@ -156,7 +163,7 @@ const getRestaurants = async (req, res) => {
             maxResultCount: 15,
             locationRestriction: {
               circle: {
-                center: { latitude: parseFloat(latitude), longitude: parseFloat(longitude) },
+                center: { latitude: parseFloat(searchLat), longitude: parseFloat(searchLng) },
                 radius: parseInt(maxDistance)
               }
             }

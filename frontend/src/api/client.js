@@ -2,11 +2,11 @@ import axios from "axios";
 import { io } from "socket.io-client";
 
 export const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "http://localhost:5000/api",
+  baseURL: import.meta.env.VITE_API_URL || (import.meta.env.PROD ? "/api" : "http://localhost:5000/api"),
 });
 
 const getSocketUrl = () => {
-  const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+  const apiUrl = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? "" : "http://localhost:5000");
   return apiUrl.endsWith("/api") ? apiUrl.slice(0, -4) : apiUrl;
 };
 
@@ -262,10 +262,6 @@ export const api = {
       const { data } = await apiClient.post("/reviews", payload);
       return data;
     },
-<<<<<<< HEAD
-=======
-
->>>>>>> week4/siddharth
     getSuggestions: async (orderId) => {
       const { data } = await apiClient.get(`/reviews/suggestions/${orderId}`);
       return data;
