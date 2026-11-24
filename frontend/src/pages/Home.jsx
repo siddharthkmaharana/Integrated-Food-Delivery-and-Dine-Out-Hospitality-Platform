@@ -52,15 +52,17 @@ export default function Home() {
         setLoading(false);
       });
 
-    // Fetch recommendations
-    setRecLoading(true);
-    api.restaurants.recommendations(coords)
-      .then(data => {
-        setRecommendations(data.data || []);
-        setBasedOn(data.basedOn || []);
-        setRecLoading(false);
-      })
-      .catch(() => setRecLoading(false));
+    // Fetch recommendations (only if logged in)
+    if (localStorage.getItem("token")) {
+      setRecLoading(true);
+      api.restaurants.recommendations(coords)
+        .then(data => {
+          setRecommendations(data.data || []);
+          setBasedOn(data.basedOn || []);
+          setRecLoading(false);
+        })
+        .catch(() => setRecLoading(false));
+    }
   };
 
   useEffect(() => {
