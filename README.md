@@ -1,10 +1,12 @@
 # 🍔 Integrated Food Delivery and Dine-Out Hospitality Platform
 
-![React](https://img.shields.io/badge/Frontend-React-blue)
-![NodeJS](https://img.shields.io/badge/Backend-NodeJS-green)
-![MongoDB](https://img.shields.io/badge/Database-MongoDB-brightgreen)
-![Socket.io](https://img.shields.io/badge/Realtime-Socket.io-black)
-![AWS](https://img.shields.io/badge/Cloud-AWS-orange)
+![React](https://img.shields.io/badge/Frontend-React%20%7C%20Vite-blue)
+![Vercel](https://img.shields.io/badge/Deploy-Vercel-black?logo=vercel)
+![NodeJS](https://img.shields.io/badge/Backend-NodeJS%20%7C%20Express-green)
+![Render](https://img.shields.io/badge/Deploy-Render-46E3B7?logo=render)
+![MongoDB](https://img.shields.io/badge/Database-MongoDB%20Atlas-brightgreen?logo=mongodb)
+![Socket.io](https://img.shields.io/badge/Realtime-Socket.io-black?logo=socketdotio)
+![CronJob](https://img.shields.io/badge/Uptime-cron--job.org-orange)
 
 A **full-stack MERN platform** that integrates **food delivery, restaurant discovery, dine-out reservations, and real-time order tracking** into a single ecosystem.
 
@@ -209,10 +211,13 @@ Delivery partners can:
 
 * Socket.io
 
-## Cloud Infrastructure
+## Cloud & Deployment Infrastructure
 
-* AWS EC2
-* AWS S3
+* **Frontend Hosting**: Vercel (Production SPA with Edge Rewrites)
+* **Backend Hosting**: Render (Node.js Web Service)
+* **Database**: MongoDB Atlas (Cloud Cluster with 2dsphere Geospatial Indexing)
+* **Uptime Keep-Alive**: cron-job.org (Scheduled automated ping every 10 mins)
+* **Media Storage**: AWS S3 / Local Multer fallback
 
 ## DevOps
 
@@ -477,14 +482,22 @@ http://localhost:5173
 
 ---
 
-# ☁ Deployment
+# ☁ Live Deployment & Infrastructure
 
-Recommended cloud infrastructure:
+The application is deployed live in production:
 
-Frontend → Vercel / Netlify
-Backend → AWS EC2
-Database → MongoDB Atlas
-Media Storage → AWS S3
+* **Frontend**: [Vercel](https://integrated-food-delivery-and-dine-o.vercel.app)
+  * Live URL: `https://integrated-food-delivery-and-dine-o.vercel.app`
+  * Dynamic reverse proxy for `/api` and `/socket.io` configured in `vercel.json`
+  * Fast landing page performance with unblocked client-side mounting
+* **Backend**: [Render](https://integrated-food-delivery-and-dine-out-rgmc.onrender.com)
+  * Live Service: `https://integrated-food-delivery-and-dine-out-rgmc.onrender.com`
+  * Node.js & Express REST API with real-time Socket.IO support
+* **Database**: [MongoDB Atlas](https://www.mongodb.com/atlas)
+  * Hosted cloud replica set with geospatial `2dsphere` indexes
+* **Uptime Keep-Alive Monitoring**: [cron-job.org](https://cron-job.org)
+  * Configured automated cron ping scheduled every **10 minutes** to `https://integrated-food-delivery-and-dine-out-rgmc.onrender.com/`
+  * Prevents Render free tier instances from sleeping after 15 minutes of inactivity, eliminating cold-start delays and ensuring instant response times 24/7.
 
 ---
 
