@@ -6,6 +6,8 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
+    "seed:restaurants": "node seed_restaurants.js",
+    "seed:menus": "node seed_menus.js",
     "test": "node --experimental-vm-modules node_modules/.bin/jest --testEnvironment node",
     "test:watch": "node --experimental-vm-modules node_modules/.bin/jest --watch",
     "lint": "eslint src/**/*.js"
